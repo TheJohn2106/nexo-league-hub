@@ -1,0 +1,231 @@
+{
+ "subsession_id": 81234567,
+ "session_id": 0,
+ "start_time": "2026-11-14T19:30:00Z",
+ "league_id": 0,
+ "league_season_id": 0,
+ "track": {
+  "track_id": 0,
+  "track_name": "Circuit fictif de démonstration",
+  "config_name": "Grand Prix"
+ },
+ "_comment": "Fixture SYNTHETIQUE au format de la réponse Data API iRacing results/get (noms et identifiants fictifs).",
+ "session_results": [
+  {
+   "simsession_number": -1,
+   "simsession_type": 4,
+   "simsession_type_name": "Open Qualifying",
+   "simsession_name": "QUALIFY",
+   "results": [
+    {
+     "cust_id": 900001,
+     "display_name": "Alex Martin",
+     "finish_position": 0,
+     "finish_position_in_class": 0,
+     "starting_position": 0,
+     "laps_complete": 3,
+     "laps_lead": 10,
+     "best_lap_time": 1381000,
+     "best_lap_num": 7,
+     "interval": 0,
+     "incidents": 2,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "10"
+     }
+    },
+    {
+     "cust_id": 900002,
+     "display_name": "Sam Dupont",
+     "finish_position": 1,
+     "finish_position_in_class": 1,
+     "starting_position": 1,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "best_lap_time": 1382500,
+     "best_lap_num": 7,
+     "interval": 15000,
+     "incidents": 2,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "11"
+     }
+    },
+    {
+     "cust_id": 900003,
+     "display_name": "Léa Moreau",
+     "finish_position": 2,
+     "finish_position_in_class": 2,
+     "starting_position": 2,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "best_lap_time": 1389000,
+     "best_lap_num": 7,
+     "interval": 80000,
+     "incidents": 2,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "12"
+     }
+    },
+    {
+     "cust_id": 900005,
+     "display_name": "Inès Petit",
+     "finish_position": 3,
+     "finish_position_in_class": 3,
+     "starting_position": 3,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "best_lap_time": 1395000,
+     "best_lap_num": 7,
+     "interval": 140000,
+     "incidents": 2,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "13"
+     }
+    },
+    {
+     "cust_id": 999999,
+     "display_name": "Invité Mystère",
+     "finish_position": 4,
+     "finish_position_in_class": 4,
+     "starting_position": 4,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "best_lap_time": 1399000,
+     "best_lap_num": 7,
+     "interval": 180000,
+     "incidents": 2,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "14"
+     }
+    }
+   ]
+  },
+  {
+   "simsession_number": 0,
+   "simsession_type": 6,
+   "simsession_type_name": "Race",
+   "simsession_name": "RACE",
+   "results": [
+    {
+     "cust_id": 900002,
+     "display_name": "Sam Dupont",
+     "finish_position": 0,
+     "finish_position_in_class": 0,
+     "starting_position": 1,
+     "laps_complete": 20,
+     "laps_lead": 10,
+     "best_lap_time": 1385234,
+     "best_lap_num": 7,
+     "interval": 0,
+     "incidents": 2,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "10"
+     }
+    },
+    {
+     "cust_id": 900001,
+     "display_name": "Alex Martin",
+     "finish_position": 1,
+     "finish_position_in_class": 1,
+     "starting_position": 0,
+     "laps_complete": 20,
+     "laps_lead": 0,
+     "best_lap_time": 1384100,
+     "best_lap_num": 7,
+     "interval": 21234,
+     "incidents": 2,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "11"
+     }
+    },
+    {
+     "cust_id": 999999,
+     "display_name": "Invité Mystère",
+     "finish_position": 2,
+     "finish_position_in_class": 2,
+     "starting_position": 2,
+     "laps_complete": 20,
+     "laps_lead": 0,
+     "best_lap_time": 1390000,
+     "best_lap_num": 7,
+     "interval": 85555,
+     "incidents": 6,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "12"
+     }
+    },
+    {
+     "cust_id": 900003,
+     "display_name": "Léa Moreau",
+     "finish_position": 3,
+     "finish_position_in_class": 3,
+     "starting_position": 3,
+     "laps_complete": 19,
+     "laps_lead": 0,
+     "best_lap_time": 1391000,
+     "best_lap_num": 7,
+     "interval": -1,
+     "incidents": 2,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "13"
+     }
+    },
+    {
+     "cust_id": 900005,
+     "display_name": "Inès Petit",
+     "finish_position": 4,
+     "finish_position_in_class": 4,
+     "starting_position": 4,
+     "laps_complete": 8,
+     "laps_lead": 0,
+     "best_lap_time": 1399000,
+     "best_lap_num": 7,
+     "interval": -1,
+     "incidents": 9,
+     "reason_out": "Disconnected",
+     "reason_out_id": 32,
+     "car_name": "BMW M4 GT3",
+     "car_class_short_name": "GT3",
+     "livery": {
+      "car_number": "14"
+     }
+    }
+   ]
+  }
+ ]
+}
