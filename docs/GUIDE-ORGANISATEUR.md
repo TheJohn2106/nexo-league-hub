@@ -25,6 +25,13 @@ Un compte créé n’est **jamais** membre ni participant automatiquement : l’
 
 **Membres** (`/admin/members`) : accepter ou refuser les demandes, attribuer les rôles, retirer un membre (avec motif). Les coordonnées privées (email, contact) ne sont visibles que de l’organisation.
 
+**Mot de passe oublié** : l’application n’envoie pas d’email. Sur la page Membres, « Lien mot de passe » crée un lien **à usage unique, valable 24 heures**, affiché pendant 2 minutes : copiez-le et transmettez-le au membre par un canal **privé** (message direct Discord, par exemple), jamais dans un salon public. Le membre choisit un nouveau mot de passe ; toutes ses sessions ouvertes sont fermées. Créer un nouveau lien annule le précédent, et chaque lien créé est inscrit au journal.
+
+- Un organisateur peut le faire pour un pilote ou un capitaine ; le propriétaire, pour tout membre sauf un propriétaire.
+- Un compte qui a un rôle plus élevé dans une **autre** ligue hébergée est refusé (le compte est commun aux ligues).
+- Un compte propriétaire se réinitialise sur le serveur : `npm run user:password -- --email <adresse>` (accès à la base requis).
+- Un compte créé avec Discord n’a pas de mot de passe : il se connecte avec Discord.
+
 ## 2. Créer une saison
 
 **Nouveau championnat** :
@@ -88,8 +95,8 @@ Sur la page de la manche :
 
 Pour chaque session, trois voies mènent à un **aperçu** avant validation :
 
-1. **API iRacing** : récupère `/data/results/get` pour la sous-session associée, avec **votre** compte iRacing connecté (Profil → Connecter mon compte iRacing). Il faut que l’API soit configurée sur le serveur. Sinon le bouton est désactivé et un message explique comment l’activer. Les erreurs (limite de requêtes, autorisation expirée) sont enregistrées et visibles sur le tableau de bord.
-2. **Fichier** :
+1. **API iRacing** : récupère `/data/results/get` pour la sous-session associée, avec **votre** compte iRacing connecté (Profil → Connecter mon compte iRacing). Il faut que l’API soit configurée sur le serveur. Sinon le bouton est désactivé et un message explique comment l’activer. Les erreurs (limite de requêtes, autorisation expirée) sont enregistrées et visibles sur le tableau de bord. Les erreurs passagères sont relancées automatiquement par le worker (5 essais au plus) ; une autorisation expirée demande de reconnecter votre compte iRacing.
+2. **Fichier** (courses en équipage et multi-classes comprises) :
    - JSON de la Data API iRacing (réponse de `results/get`) ;
    - ou **modèle CSV Nexo**, un format interne, **pas** un export officiel iRacing.
    
@@ -98,7 +105,7 @@ Pour chaque session, trois voies mènent à un **aperçu** avant validation :
 
 Dans l’aperçu :
 
-- Les pilotes reconnus par leur identifiant iRacing sont rapprochés automatiquement.
+- Les pilotes reconnus par leur identifiant iRacing sont rapprochés automatiquement. En équipage, la voiture est rapprochée si un seul inscrit figure dans l’équipage ; sinon, choisissez lequel marque les points.
 - Un nom identique est seulement **suggéré** : il faut confirmer.
 - Un participant inconnu exige une décision : choisir un pilote, ou « hors classement ».
 - Cochez « définitifs » ou laissez « provisoires », par exemple en attendant les réclamations.

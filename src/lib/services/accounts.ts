@@ -205,7 +205,7 @@ export async function createPasswordReset(db: Db, communityId: string, actorId: 
   if (highest > limit)
     throw new AppError(
       actorRole === "owner"
-        ? "Impossible pour un compte propriétaire : utilisez la commande owner:create sur le serveur."
+        ? "Impossible pour un compte propriétaire : utilisez la commande user:password sur le serveur."
         : "Un organisateur ne peut réinitialiser que le compte d’un pilote ou d’un capitaine.",
       403,
     );
@@ -248,4 +248,16 @@ export async function consumePasswordReset(db: Db, token: unknown, next: unknown
   await db.query("DELETE FROM auth_sessions WHERE user_id=$1", [row.user_id]);
   await audit(db, row.community_id, row.user_id, "password.reset_done", "user", row.user_id);
   return row.user_id as string;
+}
+
+/** Réinitialisation sur le serveur (commande user:password), seule voie pour un compte propriétaire. */
+export async function setPasswordByEmail(db: Db, rawEmail: string, next: unknown) {
+  const newPassword = parse(password, next);
+  const user = (await db.query("SELECT id FROM users WHERE email=$1", [parse(email, rawEmail)])).rows[0];
+  if (!user) throw new AppError("Aucun compte avec cette adresse.", 404);
+  await db.query("UPDATE users SET password_hash=$2 WHERE id=$1", [user.id, hashPassword(newPassword)]);
+  await db.query("DELETE FROM auth_sessions WHERE user_id=$1", [user.id]);
+  await db.query("UPDATE password_resets SET used_at=now() WHERE user_id=$1 AND used_at IS NULL", [user.id]);
+  await audit(db, null, null, "password.reset_server", "user", user.id);
+  return user.id as string;
 }

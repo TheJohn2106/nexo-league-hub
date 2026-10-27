@@ -2,8 +2,8 @@
 //   npm run owner:create -- --email orga@exemple.org --name "Orga" --slug ma-ligue --league "Ma Ligue"
 // Le mot de passe est lu depuis NEXO_OWNER_PASSWORD ou demandé de façon interactive (non affiché).
 import "dotenv/config";
-import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
+import { askPassword } from "./ask-password.ts";
 import { getPool, tx } from "../src/lib/db.ts";
 import { registerUser } from "../src/lib/services/accounts.ts";
 import { createCommunity } from "../src/lib/services/community.ts";
@@ -14,29 +14,6 @@ const { values } = parseArgs({
 if (!values.email || !values.slug || !values.league) {
   console.error('Usage : npm run owner:create -- --email <email> --name <pseudo> --slug <url> --league "<nom>" [--timezone Europe/Brussels]');
   process.exit(2);
-}
-
-async function askPassword() {
-  if (process.env.NEXO_OWNER_PASSWORD) return process.env.NEXO_OWNER_PASSWORD;
-  if (!process.stdin.isTTY) throw new Error("Définissez NEXO_OWNER_PASSWORD ou lancez la commande dans un terminal interactif.");
-  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-  // Masque la saisie.
-  const write = (rl as unknown as { _writeToOutput: (s: string) => void })._writeToOutput.bind(rl);
-  let hidden = false;
-  (rl as unknown as { _writeToOutput: (s: string) => void })._writeToOutput = (s: string) => write(hidden ? "" : s);
-  const prompt = async (q: string) => {
-    process.stdout.write(q);
-    hidden = true;
-    const a = await rl.question("");
-    hidden = false;
-    process.stdout.write("\n");
-    return a;
-  };
-  const a = await prompt("Mot de passe (10 caractères min., lettres et chiffres) : ");
-  const b = await prompt("Confirmation : ");
-  rl.close();
-  if (a !== b) throw new Error("Les mots de passe ne correspondent pas.");
-  return a;
 }
 
 const pool = getPool();

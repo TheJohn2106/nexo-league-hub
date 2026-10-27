@@ -17,6 +17,7 @@
   - création de compte : 10 par heure et par client ;
   - changement de mot de passe : 5.
 - Aucun compte ni mot de passe par défaut : `owner:create` demande le mot de passe, et `db:seed` est refusé si `NODE_ENV=production`.
+- Mot de passe oublié : lien à usage unique créé par l’organisation (jeton aléatoire de 256 bits stocké haché, 24 h, annulé par un nouveau lien, page sans référent). Il est transmis par l’organisateur, jamais placé dans une URL de l’administration ; son utilisation ferme toutes les sessions du compte. Un organisateur ne peut viser que pilotes et capitaines, et aucun compte ayant un rôle plus élevé dans une autre ligue. Chaque création et utilisation est journalisée.
 
 ## Mutations
 

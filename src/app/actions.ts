@@ -108,7 +108,7 @@ export async function joinAction(form: FormData) {
 }
 export async function resetPasswordAction(form: FormData) {
   const token = str(form, "token");
-  let target = "/?ok=" + encodeURIComponent("Mot de passe modifié. Vous êtes connecté.");
+  let target = withFlash("/profile", "ok", "Mot de passe modifié. Vous êtes connecté.");
   try {
     await rateLimit(getPool(), `reset:${await clientKey()}`, 10, 15);
     if (str(form, "next") !== str(form, "next2")) throw new AppError("Les mots de passe ne correspondent pas.");

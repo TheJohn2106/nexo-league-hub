@@ -48,7 +48,10 @@ Ce client provient du Rabbit Hub. Les résultats sont récupérés **par un orga
 - **Blocage externe** : la documentation consultée pour le Rabbit Hub (septembre 2026) annonçait une **suspension de la création de nouveaux clients OAuth**. Sans client existant, l’import API reste inactif. L’interface le dit et propose l’import de fichier ou la saisie manuelle.
 - Le parseur suit les champs documentés de `results/get` : `session_results[].results[]`, positions à partir de 0, temps en 1/10 000 s, `reason_out`. Il a été validé sur un **fichier synthétique**, pas encore sur une réponse réelle. À vérifier lors de la première manche.
 - La découverte automatique des sessions de ligue n’est pas implémentée. L’association se fait à la main.
-- Les erreurs sont enregistrées et visibles sur le tableau de bord : limite de requêtes, autorisation expirée, lien inattendu. La reprise est **manuelle**, en relançant la récupération : la déduplication garantit qu’il n’y a pas de doublon.
+- Les erreurs sont enregistrées et visibles sur le tableau de bord : limite de requêtes, autorisation expirée, lien inattendu.
+- **Reprise automatique par le worker** pour les erreurs passagères (limite de requêtes 429, service iRacing indisponible 5xx, récupération déjà en cours) : 15 min après une limite, sinon délai croissant (20 min, 40 min, 1 h 20…), **abandon après 5 essais**. La reprise utilise le compte iRacing de l’organisateur qui a lancé la récupération et produit un **aperçu**, jamais une validation. Les erreurs d’autorisation (compte non connecté ou expiré, 401/403) ne sont pas reprises : le tableau de bord indique « action requise ». Testé avec un iRacing **simulé** uniquement.
+- Une relance manuelle reste possible à tout moment ; la déduplication garantit qu’il n’y a pas de doublon.
+- Courses en **équipage** (endurance) : une ligne par voiture. La voiture est rapprochée automatiquement si **un seul** pilote inscrit figure dans l’équipage ; s’il y en a plusieurs, l’organisateur choisit. **Multi-classes** : pole et meilleur tour sont attribués par classe quand le barème compte les places par classe. Validé sur un fichier synthétique.
 
 ## Discord
 
@@ -95,9 +98,14 @@ Chaque passage :
 1. planifie les rappels ;
 2. expire les places proposées non acceptées et passe la place au suivant ;
 3. envoie la file Discord ;
-4. compte les échecs de synchronisation non résolus.
+4. relance les récupérations iRacing en échec dont le délai est écoulé (voir ci-dessus) ;
+5. compte les échecs de synchronisation non résolus.
 
-Sans worker, le site fonctionne, mais les rappels ne partent pas et les places proposées expirées ne sont réattribuées qu’à la prochaine action sur la manche.
+Sans worker, le site fonctionne, mais les rappels ne partent pas, les récupérations iRacing en échec ne sont pas relancées et les places proposées expirées ne sont réattribuées qu’à la prochaine action sur la manche.
+
+### Fuseau horaire et changements d’heure
+
+Toutes les dates sont stockées en UTC et saisies ou affichées dans le fuseau de la ligue (Europe/Brussels par défaut). Les délais (réponse de présence, rappel, pointage) sont des **durées réelles** : « 48 h avant » une course le lundi 26 octobre 2026 à 20:30 tombe le samedi à **21:30**, car le changement d’heure a lieu entre les deux ; l’heure affichée aux pilotes est la bonne. Une heure qui n’existe pas (02:30 le jour du passage à l’heure d’été) est refusée à la saisie ; une heure qui existe deux fois (02:30 le jour du passage à l’heure d’hiver) est comprise comme la seconde, en heure d’hiver.
 
 ## Hébergement
 

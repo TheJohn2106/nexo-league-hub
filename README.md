@@ -35,21 +35,22 @@ Ligue réelle (sans données de démo, sans mot de passe par défaut) :
 ```bash
 npm run owner:create -- --email orga@exemple.org --name "Orga" --slug ma-ligue --league "Ma Ligue"
 # le mot de passe est demandé (saisie masquée) ou lu dans NEXO_OWNER_PASSWORD
+npm run user:password -- --email orga@exemple.org   # redéfinir un mot de passe depuis le serveur
 ```
 
 ## Vérification
 
 ```bash
 npm run typecheck                 # TypeScript
-npm test                          # moteur de points, parseurs de résultats, permissions (27 tests)
-npm run test:db                   # PostgreSQL réel : scénario complet, sécurité, concurrence, Discord simulé (8 tests)
+npm test                          # moteur de points, parseurs de résultats, permissions, fuseau horaire (32 tests)
+npm run test:db                   # PostgreSQL réel : scénario complet, sécurité, concurrence, Discord et iRacing simulés, mot de passe oublié, changement d’heure (14 tests)
 npm run build                     # build de production
 curl -s localhost:3000/api/health # {"status":"ok"}
 curl -s localhost:3000/api/ready  # {"status":"ready"} si la base répond et toutes les migrations sont appliquées
 
 # Parcours navigateur (serveur lancé sur :3000, base seedée avec SEED_PASSWORD) :
 npx playwright install chromium   # une fois (ou CHROMIUM_PATH=/chemin/vers/chrome)
-SEED_PASSWORD='DemoNexo2026' npm run test:e2e     # 15 parcours, dont inscription et présence sur mobile 390 px
+SEED_PASSWORD='DemoNexo2026' npm run test:e2e     # 16 parcours, dont inscription, présence et mot de passe oublié sur mobile 390 px
 SEED_PASSWORD='DemoNexo2026' npm run test:crawl   # explore toutes les pages : erreurs HTTP/JS, débordements mobiles
 ```
 
@@ -73,7 +74,7 @@ SEED_PASSWORD='DemoNexo2026' npm run test:crawl   # explore toutes les pages : e
 
 ```
 db/migrations/        schéma PostgreSQL (UTC, contraintes, index de déduplication)
-scripts/              migrate, seed, create-owner, worker
+scripts/              migrate, seed, create-owner, set-password, worker
 src/lib/scoring/      moteur de points pur et déterministe (sans base ni affichage)
 src/lib/results/      parseurs : JSON Data API iRacing, modèle CSV Nexo, saisie manuelle
 src/lib/services/     règles métier ; chaque service vérifie les droits côté serveur

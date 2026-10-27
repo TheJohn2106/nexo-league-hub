@@ -3,7 +3,7 @@ import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
 import { freshPool, makeUser, run } from "./helpers.ts";
-import { consumePasswordReset, createPasswordReset, createSession, passwordResetValid, userFromToken, verifyLogin } from "../../src/lib/services/accounts.ts";
+import { consumePasswordReset, createPasswordReset, createSession, passwordResetValid, setPasswordByEmail, userFromToken, verifyLogin } from "../../src/lib/services/accounts.ts";
 import { createCommunity } from "../../src/lib/services/community.ts";
 
 let pool: Pool;
@@ -87,4 +87,12 @@ test("usage unique, expiration, ancien lien invalidé, sessions fermées", async
   assert.equal(await passwordResetValid(pool, late), false);
   await assert.rejects(run(pool, (db) => consumePasswordReset(db, late, "encoreUnAutre9")), /expiré/);
   assert.equal((await pool.query("SELECT count(*)::int n FROM audit_log WHERE action='password.reset_done'")).rows[0].n, 1);
+
+  // Commande serveur : invalide aussi les liens en cours et ferme les sessions.
+  const pending = (await run(pool, (db) => createPasswordReset(db, cid, owner, driver)))!;
+  const s2 = await createSession(pool, driver);
+  await run(pool, (db) => setPasswordByEmail(db, email, "parLeServeur42"));
+  assert.equal(await passwordResetValid(pool, pending), false);
+  assert.equal(await userFromToken(pool, s2), null);
+  assert.equal(await verifyLogin(pool, email, "parLeServeur42", "test-reset-3"), driver);
 });
