@@ -1,0 +1,335 @@
+{
+ "_comment": "Données ENTIÈREMENT FICTIVES, construites d'après les noms de champs documentés de /data/results/get (course en équipage, deux classes). Non issues d'une réponse iRacing réelle.",
+ "subsession_id": 81234999,
+ "start_time": "2026-11-08T18:00:00Z",
+ "track": {
+  "track_id": 0,
+  "track_name": "Circuit fictif d'endurance",
+  "config_name": "Complet"
+ },
+ "session_results": [
+  {
+   "simsession_number": -1,
+   "simsession_type": 4,
+   "simsession_type_name": "Lone Qualifying",
+   "simsession_name": "QUALIFY",
+   "results": [
+    {
+     "team_id": -502,
+     "display_name": "Équipe Fictive Racing",
+     "finish_position": 0,
+     "finish_position_in_class": 0,
+     "starting_position": -1,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "interval": 0,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "Prototype fictif",
+     "car_class_short_name": "GTP",
+     "car_class_name": "GTP Class",
+     "livery": {
+      "car_number": "98"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900006,
+       "display_name": "Noah Lambert",
+       "best_lap_time": 981000,
+       "laps_complete": 3,
+       "incidents": 0
+      }
+     ],
+     "best_lap_time": 981000,
+     "incidents": 0
+    },
+    {
+     "team_id": -501,
+     "display_name": "Équipe Fictive Prototype",
+     "finish_position": 1,
+     "finish_position_in_class": 1,
+     "starting_position": -1,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "interval": 0,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "Prototype fictif",
+     "car_class_short_name": "GTP",
+     "car_class_name": "GTP Class",
+     "livery": {
+      "car_number": "99"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900011,
+       "display_name": "Pilote Proto A",
+       "best_lap_time": 981500,
+       "laps_complete": 3,
+       "incidents": 0
+      }
+     ],
+     "best_lap_time": 981500,
+     "incidents": 0
+    },
+    {
+     "team_id": -504,
+     "display_name": "GT Fictif 2",
+     "finish_position": 2,
+     "finish_position_in_class": 0,
+     "starting_position": -1,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "interval": 0,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "GT3 fictive",
+     "car_class_short_name": "GT3",
+     "car_class_name": "GT3 Class",
+     "livery": {
+      "car_number": "96"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900003,
+       "display_name": "Léa Moreau",
+       "best_lap_time": 1048000,
+       "laps_complete": 3,
+       "incidents": 0
+      }
+     ],
+     "best_lap_time": 1048000,
+     "incidents": 0
+    },
+    {
+     "team_id": -503,
+     "display_name": "GT Fictif 1",
+     "finish_position": 3,
+     "finish_position_in_class": 1,
+     "starting_position": -1,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "interval": 0,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "GT3 fictive",
+     "car_class_short_name": "GT3",
+     "car_class_name": "GT3 Class",
+     "livery": {
+      "car_number": "97"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900001,
+       "display_name": "Alex Martin",
+       "best_lap_time": 1049000,
+       "laps_complete": 3,
+       "incidents": 0
+      }
+     ],
+     "best_lap_time": 1049000,
+     "incidents": 0
+    },
+    {
+     "team_id": -505,
+     "display_name": "GT Fictif 3",
+     "finish_position": 4,
+     "finish_position_in_class": 2,
+     "starting_position": -1,
+     "laps_complete": 3,
+     "laps_lead": 0,
+     "interval": 0,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "GT3 fictive",
+     "car_class_short_name": "GT3",
+     "car_class_name": "GT3 Class",
+     "livery": {
+      "car_number": "95"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900007,
+       "display_name": "Jade Renard",
+       "best_lap_time": 1055000,
+       "laps_complete": 3,
+       "incidents": 0
+      }
+     ],
+     "best_lap_time": 1055000,
+     "incidents": 0
+    }
+   ]
+  },
+  {
+   "simsession_number": 0,
+   "simsession_type": 6,
+   "simsession_type_name": "Race",
+   "simsession_name": "RACE",
+   "results": [
+    {
+     "team_id": -501,
+     "display_name": "Équipe Fictive Prototype",
+     "finish_position": 0,
+     "finish_position_in_class": 0,
+     "starting_position": 1,
+     "laps_complete": 120,
+     "laps_lead": 0,
+     "interval": 0,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "Prototype fictif",
+     "car_class_short_name": "GTP",
+     "car_class_name": "GTP Class",
+     "livery": {
+      "car_number": "99"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900011,
+       "display_name": "Pilote Proto A",
+       "best_lap_time": 982345,
+       "laps_complete": 60,
+       "incidents": 2
+      },
+      {
+       "cust_id": 900012,
+       "display_name": "Pilote Proto B",
+       "best_lap_time": 985000,
+       "laps_complete": 60,
+       "incidents": 0
+      }
+     ]
+    },
+    {
+     "team_id": -502,
+     "display_name": "Équipe Fictive Racing",
+     "finish_position": 1,
+     "finish_position_in_class": 1,
+     "starting_position": 0,
+     "laps_complete": 120,
+     "laps_lead": 0,
+     "interval": 412340,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "Prototype fictif",
+     "car_class_short_name": "GTP",
+     "car_class_name": "GTP Class",
+     "livery": {
+      "car_number": "98"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900006,
+       "display_name": "Noah Lambert",
+       "best_lap_time": 983100,
+       "laps_complete": 70,
+       "incidents": 4
+      },
+      {
+       "cust_id": 900013,
+       "display_name": "Pilote Invité",
+       "best_lap_time": 990000,
+       "laps_complete": 50,
+       "incidents": 0
+      }
+     ],
+     "best_lap_time": 983100,
+     "incidents": 4
+    },
+    {
+     "team_id": -503,
+     "display_name": "GT Fictif 1",
+     "finish_position": 2,
+     "finish_position_in_class": 0,
+     "starting_position": 2,
+     "laps_complete": 112,
+     "laps_lead": 0,
+     "interval": -1,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "GT3 fictive",
+     "car_class_short_name": "GT3",
+     "car_class_name": "GT3 Class",
+     "livery": {
+      "car_number": "97"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900001,
+       "display_name": "Alex Martin",
+       "best_lap_time": 1051200,
+       "laps_complete": 56,
+       "incidents": 2
+      },
+      {
+       "cust_id": 900002,
+       "display_name": "Sam Dupont",
+       "best_lap_time": 1052000,
+       "laps_complete": 56,
+       "incidents": 4
+      }
+     ],
+     "best_lap_time": 1051200,
+     "incidents": 6
+    },
+    {
+     "team_id": -504,
+     "display_name": "GT Fictif 2",
+     "finish_position": 3,
+     "finish_position_in_class": 1,
+     "starting_position": 3,
+     "laps_complete": 111,
+     "laps_lead": 0,
+     "interval": -1,
+     "reason_out": "Running",
+     "reason_out_id": 0,
+     "car_name": "GT3 fictive",
+     "car_class_short_name": "GT3",
+     "car_class_name": "GT3 Class",
+     "livery": {
+      "car_number": "96"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900003,
+       "display_name": "Léa Moreau",
+       "best_lap_time": 1049900,
+       "laps_complete": 111,
+       "incidents": 3
+      }
+     ]
+    },
+    {
+     "team_id": -505,
+     "display_name": "GT Fictif 3",
+     "finish_position": 4,
+     "finish_position_in_class": 2,
+     "starting_position": 4,
+     "laps_complete": 40,
+     "laps_lead": 0,
+     "interval": -1,
+     "reason_out": "Contact",
+     "reason_out_id": 32,
+     "car_name": "GT3 fictive",
+     "car_class_short_name": "GT3",
+     "car_class_name": "GT3 Class",
+     "livery": {
+      "car_number": "95"
+     },
+     "driver_results": [
+      {
+       "cust_id": 900007,
+       "display_name": "Jade Renard",
+       "best_lap_time": 1060000,
+       "laps_complete": 40,
+       "incidents": 10
+      }
+     ],
+     "best_lap_time": 1060000,
+     "incidents": 10
+    }
+   ]
+  }
+ ]
+}

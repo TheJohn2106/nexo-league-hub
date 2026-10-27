@@ -144,7 +144,7 @@ export async function importFromIracingApi(pool: Pool, communityId: string, acto
 export interface MatchSuggestion {
   entryKey: string;
   userId: string | null;
-  how: "iracing_id" | "manual_entry" | "name" | "none";
+  how: "iracing_id" | "crew" | "crew_choice" | "manual_entry" | "name" | "none";
   registered: boolean;
 }
 
@@ -178,6 +178,10 @@ export async function getImport(db: Db, communityId: string, importId: string) {
     }
     const byId = row.custId != null ? drivers.find((d) => d.custId != null && Number(d.custId) === row.custId) : undefined;
     if (byId) return { entryKey: row.entryKey, userId: byId.userId, how: "iracing_id", registered: true };
+    // Voiture d'équipage : rapprochée par les identifiants iRacing de ses pilotes.
+    const crew = drivers.filter((d) => d.custId != null && (row.crew ?? []).some((c) => c.custId === Number(d.custId)));
+    if (crew.length === 1) return { entryKey: row.entryKey, userId: crew[0].userId, how: "crew", registered: true };
+    if (crew.length > 1) return { entryKey: row.entryKey, userId: crew[0].userId, how: "crew_choice", registered: true };
     const byName = drivers.find((d) => d.displayName.toLowerCase() === row.displayName.toLowerCase());
     if (byName) return { entryKey: row.entryKey, userId: byName.userId, how: "name", registered: true };
     return { entryKey: row.entryKey, userId: null, how: "none", registered: false };
@@ -206,7 +210,7 @@ export async function applyImport(
   const undecided: string[] = [];
   for (const s of suggestions) {
     const choice = options.matches[s.entryKey];
-    if (s.how === "iracing_id" || s.how === "manual_entry") assigned.set(s.entryKey, choice && choice !== "auto" ? (choice === "none" ? null : choice) : s.userId);
+    if (s.how === "iracing_id" || s.how === "crew" || s.how === "manual_entry") assigned.set(s.entryKey, choice && choice !== "auto" ? (choice === "none" ? null : choice) : s.userId);
     else if (choice === "none") assigned.set(s.entryKey, null);
     else if (choice && choice !== "auto") assigned.set(s.entryKey, choice);
     else undecided.push(parsed.rows.find((r) => r.entryKey === s.entryKey)!.displayName);

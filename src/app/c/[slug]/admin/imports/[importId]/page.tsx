@@ -11,10 +11,14 @@ export const metadata = { title: "Aperçu d’import" };
 
 const how: Record<string, string> = {
   iracing_id: "Identifiant iRacing",
+  crew: "Équipage : pilote inscrit reconnu",
+  crew_choice: "Équipage : plusieurs inscrits, choisir",
   manual_entry: "Saisie manuelle",
   name: "Nom identique : à confirmer",
   none: "Inconnu : décision requise",
 };
+
+const auto = (h: string) => h === "iracing_id" || h === "crew" || h === "manual_entry";
 
 export default async function ImportPreview({ params, searchParams }: { params: Promise<{ slug: string; importId: string }>; searchParams: SP }) {
   const { slug, importId } = await params;
@@ -112,15 +116,15 @@ export default async function ImportPreview({ params, searchParams }: { params: 
                         <td>
                           <div className="breakdown">{how[s.how]}</div>
                           {editable ? (
-                            <select name={`match:${r.entryKey}`} defaultValue={s.how === "iracing_id" || s.how === "manual_entry" ? "auto" : ""} aria-label={`Rapprochement de ${r.displayName}`} required={s.how === "none" || s.how === "name"}>
-                              {(s.how === "iracing_id" || s.how === "manual_entry") && (
+                            <select name={`match:${r.entryKey}`} defaultValue={auto(s.how) ? "auto" : ""} aria-label={`Rapprochement de ${r.displayName}`} required={!auto(s.how)}>
+                              {auto(s.how) && (
                                 <option value="auto">{drivers.find((d) => d.userId === s.userId)?.displayName ?? "Pilote"} (automatique)</option>
                               )}
-                              {(s.how === "none" || s.how === "name") && <option value="">— Choisir —</option>}
+                              {!auto(s.how) && <option value="">— Choisir —</option>}
                               <option value="none">Hors classement (non inscrit)</option>
                               {drivers.map((d) => (
                                 <option key={d.userId} value={d.userId}>
-                                  {d.displayName} ({labels[d.status]}){d.userId === s.userId && s.how === "name" ? " — suggéré" : ""}
+                                  {d.displayName} ({labels[d.status]}){d.userId === s.userId && !auto(s.how) ? " — suggéré" : ""}
                                 </option>
                               ))}
                             </select>

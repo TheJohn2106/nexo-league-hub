@@ -64,3 +64,28 @@ test("temps et fuseau horaire Europe/Brussels (heure d'hiver/été)", () => {
   assert.equal(zonedLocalToUtc("2026-07-01T20:30").toISOString(), "2026-07-01T18:30:00.000Z");
   assert.equal(utcToZonedLocal("2026-11-14T19:30:00Z"), "2026-11-14T20:30");
 });
+
+const teamFixture = JSON.parse(readFileSync(new URL("./fixtures/iracing-results-get.team-multiclass.synthetic.json", import.meta.url), "utf8"));
+
+test("Data API : course en équipage multi-classe (équipages, classes, replis)", () => {
+  const s = parseIracingResult(teamFixture, { kind: "race", expectedSubsessionId: 81234999 });
+  assert.equal(s.rows.length, 5);
+  const [proto, racing, gt1, gt2, gt3] = s.rows;
+  assert.equal(proto.entryKey, "team:-501");
+  assert.equal(proto.custId, null);
+  assert.equal(proto.teamName, "Équipe Fictive Prototype");
+  assert.deepEqual(proto.crew.map((c) => c.custId), [900011, 900012]);
+  // Meilleur tour et incidents absents au niveau de la voiture : repli sur l'équipage.
+  assert.equal(proto.bestLapMs, 98235);
+  assert.equal(proto.incidents, 2);
+  assert.equal(racing.gapMs, 41234);
+  assert.equal(gt1.carClass, "GT3");
+  assert.equal(gt1.classPosition, 1);
+  assert.equal(gt1.gapLaps, 8);
+  assert.equal(gt2.bestLapMs, 104990);
+  assert.equal(gt3.status, "dnf");
+  assert.ok(s.warnings.some((w) => /équipage/.test(w)));
+  const q = parseIracingResult(teamFixture, { kind: "qualifying" });
+  assert.equal(q.simsessionNumber, -1);
+  assert.equal(q.rows[2].classPosition, 1);
+});
