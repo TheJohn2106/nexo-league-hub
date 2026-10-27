@@ -217,7 +217,7 @@ export async function adminDashboard(db: Db, communityId: string) {
     ),
     syncFailures: (
       await db.query(
-        `SELECT f.id, f.code, f.message, f.created_at AS "createdAt", s.label, r.number, r.id AS "roundId"
+        `SELECT f.id, f.code, f.message, f.created_at AS "createdAt", f.attempts, f.retry_after AS "retryAfter", s.label, r.number, r.id AS "roundId"
          FROM sync_failures f LEFT JOIN round_sessions s ON s.id=f.session_id LEFT JOIN rounds r ON r.id=s.round_id
          WHERE f.community_id=$1 AND f.resolved_at IS NULL ORDER BY f.created_at DESC LIMIT 10`,
         [communityId],

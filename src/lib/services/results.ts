@@ -103,6 +103,65 @@ export async function importManual(db: Db, communityId: string, actorId: string,
   return storeImport(db, communityId, actorId, session, "manual", raw, stableStringify(full), () => parseManualRows(full));
 }
 
+// Échecs repris automatiquement par le worker (avec le compte iRacing de l'organisateur qui a lancé la récupération).
+// Les autres (configuration, autorisation à renouveler, format) attendent une action humaine.
+const RETRYABLE = new Set(["rate-limit", "provider", "busy"]);
+export const MAX_SYNC_ATTEMPTS = 5;
+
+export async function recordSyncFailure(db: Db, communityId: string, sessionId: string, actorId: string, code: string, message: string) {
+  const retryable = RETRYABLE.has(code);
+  // Délai : 15 min pour une limite de requêtes, sinon 5, 10, 20, 40 min.
+  const updated = await db.query(
+    `UPDATE sync_failures SET attempts=attempts+1, code=$3, message=$4, actor_id=$5,
+       retry_after=CASE WHEN $6 AND attempts+1 < $7 THEN now() + make_interval(mins => CASE WHEN $3='rate-limit' THEN 15 ELSE 5 * power(2, attempts)::int END) END
+     WHERE session_id=$1 AND community_id=$2 AND kind='iracing_results' AND resolved_at IS NULL RETURNING id`,
+    [sessionId, communityId, code, message, actorId, retryable, MAX_SYNC_ATTEMPTS],
+  );
+  if (updated.rowCount) return;
+  await db.query(
+    `INSERT INTO sync_failures(community_id, session_id, kind, code, message, actor_id, retry_after)
+     VALUES($1,$2,'iracing_results',$3,$4,$5, CASE WHEN $6 THEN now() + make_interval(mins => CASE WHEN $3='rate-limit' THEN 15 ELSE 5 END) END)`,
+    [communityId, sessionId, code, message, actorId, retryable],
+  );
+}
+
+/** Reprise des échecs arrivés à échéance (worker). Un nouvel échec reprogramme ou abandonne via recordSyncFailure. */
+export async function retryDueSyncFailures(pool: Pool, transport?: Transport, now = new Date()) {
+  const due = (
+    await pool.query(
+      `SELECT id, community_id, session_id, actor_id FROM sync_failures
+       WHERE resolved_at IS NULL AND kind='iracing_results' AND retry_after <= $1 AND session_id IS NOT NULL ORDER BY retry_after LIMIT 10`,
+      [now],
+    )
+  ).rows;
+  const stats = { retried: 0, recovered: 0, failed: 0 };
+  for (const f of due) {
+    stats.retried++;
+    // Réserve l'essai : un autre worker ne reprend pas la même ligne.
+    const claimed = await pool.query("UPDATE sync_failures SET retry_after=NULL WHERE id=$1 AND retry_after IS NOT NULL RETURNING id", [f.id]);
+    if (!claimed.rowCount) continue;
+    if (!f.actor_id) {
+      await pool.query("UPDATE sync_failures SET message='Auteur de la récupération introuvable : relancez-la manuellement.' WHERE id=$1", [f.id]);
+      stats.failed++;
+      continue;
+    }
+    try {
+      const out = await importFromIracingApi(pool, f.community_id, f.actor_id, f.session_id, transport);
+      if (out.status === "failed") stats.failed++;
+      else stats.recovered++;
+    } catch (e) {
+      stats.failed++;
+      // Droits retirés, session supprimée… : pas de nouvel essai automatique.
+      if (!(e as { code?: string }).code)
+        await pool.query("UPDATE sync_failures SET message=$2 WHERE id=$1 AND resolved_at IS NULL", [
+          f.id,
+          `Reprise automatique impossible : ${(e as Error).message}`,
+        ]);
+    }
+  }
+  return stats;
+}
+
 /** Récupération via la Data API : réseau hors transaction, puis enregistrement de l'aperçu. */
 export async function importFromIracingApi(pool: Pool, communityId: string, actorId: string, sessionId: string, transport?: Transport) {
   const session = await tx(async (db) => {
@@ -118,11 +177,7 @@ export async function importFromIracingApi(pool: Pool, communityId: string, acto
   } catch (e) {
     const code = (e as { code?: string }).code ?? "provider";
     const message = (e as Error).message;
-    await pool.query(
-      `INSERT INTO sync_failures(community_id, session_id, kind, code, message, retry_after)
-       VALUES($1,$2,'iracing_results',$3,$4, CASE WHEN $3='rate-limit' THEN now()+interval '15 minutes' ELSE NULL END)`,
-      [communityId, session.id, code, message],
-    );
+    await recordSyncFailure(pool, communityId, session.id, actorId, code, message);
     throw e instanceof AppError ? e : new AppError(message, 502);
   }
   return tx(async (db) => {
@@ -130,12 +185,7 @@ export async function importFromIracingApi(pool: Pool, communityId: string, acto
     const out = await storeImport(db, communityId, actorId, locked, "iracing_api", raw, stableStringify(raw), () =>
       parseIracingResult(raw, { kind: locked.kind, simsessionNumber: locked.iracing_simsession_number, expectedSubsessionId: Number(locked.iracing_subsession_id) }),
     );
-    if (out.status === "failed")
-      await db.query("INSERT INTO sync_failures(community_id, session_id, kind, code, message) VALUES($1,$2,'iracing_results','results-format',$3)", [
-        communityId,
-        locked.id,
-        out.error,
-      ]);
+    if (out.status === "failed") await recordSyncFailure(db, communityId, locked.id, actorId, "results-format", out.error ?? "Format inattendu.");
     else await db.query("UPDATE sync_failures SET resolved_at=now() WHERE session_id=$1 AND resolved_at IS NULL", [locked.id]);
     return out;
   }, pool);
