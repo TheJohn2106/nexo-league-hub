@@ -36,6 +36,9 @@ const messages: Record<string, string> = {
   scope: "Autorisation iRacing incomplète (scope iracing.auth requis).",
   "not-linked": "Aucun compte iRacing connecté pour votre profil. Connectez-le depuis « Mon profil ».",
   busy: "Une synchronisation iRacing est déjà en cours pour votre compte.",
+  cancelled: "Connexion iRacing annulée.",
+  identity: "Ce compte iRacing est déjà connecté à un autre profil.",
+  failed: "Connexion iRacing impossible. Réessayez.",
 };
 export function iracingMessage(code: string) {
   return messages[code] ?? "Erreur iRacing inattendue.";

@@ -341,7 +341,7 @@ CREATE TABLE notification_outbox (
 CREATE TABLE audit_log (
   id bigserial PRIMARY KEY,
   community_id uuid REFERENCES communities(id) ON DELETE CASCADE,
-  actor_id uuid REFERENCES users(id),
+  actor_id uuid REFERENCES users(id) ON DELETE SET NULL,
   action text NOT NULL,
   target_type text NOT NULL,
   target_id text,

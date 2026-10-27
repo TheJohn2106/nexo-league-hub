@@ -294,14 +294,17 @@ export function computeStandings(input: EngineInput): EngineOutput {
   }
 
   const scoredRounds = rounds.filter((r) => sessions.some((s) => s.roundId === r.id && s.awardsPoints));
+  const plannedRounds = rounds.filter((r) => input.sessions.some((s) => s.roundId === r.id && s.awardsPoints));
   const standings: DriverStanding[] = input.drivers.map((d) => {
     const mine = lines.filter((l) => l.userId === d.userId);
     const roundPoints: Record<string, number> = {};
     for (const r of scoredRounds)
       roundPoints[r.id] = Math.round(mine.filter((l) => l.roundId === r.id).reduce((s, l) => s + l.total, 0) * 100) / 100;
-    const droppable = scoredRounds
+    // « Meilleurs résultats sur N manches » : les manches prévues non encore courues comptent 0 et
+    // sont retirées en premier, si bien qu'aucun résultat réel n'est retiré avant d'en avoir assez.
+    const droppable = plannedRounds
       .filter((r) => r.jokerEligible)
-      .sort((a, b) => roundPoints[a.id] - roundPoints[b.id] || b.number - a.number);
+      .sort((a, b) => (roundPoints[a.id] ?? 0) - (roundPoints[b.id] ?? 0) || b.number - a.number);
     const dropped = droppable.slice(0, Math.max(0, Math.min(cfg.dropWorst, droppable.length))).map((r) => r.id);
     const gross = Object.values(roundPoints).reduce((s, v) => s + v, 0);
     const kept = scoredRounds.filter((r) => !dropped.includes(r.id)).reduce((s, r) => s + roundPoints[r.id], 0);

@@ -87,13 +87,14 @@ export async function renderMessage(db: Db, kind: string, payload: Record<string
  * Envoie les messages en attente. Retourne le nombre envoyé/ignoré/échoué.
  * transport injectable pour les tests ; jamais appelé sans webhook configuré.
  */
-export async function deliverPending(db: Db, transport: Transport = fetch, limit = 20) {
+export async function deliverPending(db: Db, transport: Transport = fetch, limit = 20, communityId: string | null = null) {
   const appOrigin = process.env.APP_ORIGIN ?? "";
   const items = (
     await db.query(
       `SELECT o.*, co.discord_webhook_url FROM notification_outbox o JOIN communities co ON co.id=o.community_id
-       WHERE o.status='pending' AND o.next_attempt_at <= now() ORDER BY o.id LIMIT $1 FOR UPDATE OF o SKIP LOCKED`,
-      [limit],
+       WHERE o.status='pending' AND o.next_attempt_at <= now() AND ($2::uuid IS NULL OR o.community_id=$2)
+       ORDER BY o.id LIMIT $1 FOR UPDATE OF o SKIP LOCKED`,
+      [limit, communityId],
     )
   ).rows;
   const stats = { sent: 0, skipped: 0, failed: 0 };

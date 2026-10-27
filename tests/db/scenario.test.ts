@@ -176,6 +176,10 @@ test("scénario complet d'une manche", async () => {
       penalty: { userId: alex, kind: "positions", value: 2, scope: "session", reason: "Contact évitable" },
     }),
   );
+  // Conflit d'intérêts : un commissaire ne décide pas d'une réclamation qu'il a déposée.
+  const own = await run(pool, (db) => fileProtest(db, cid, steward, race, { againstUserId: sam, lap: "", description: "Blocage dans la ligne droite.", videoUrl: "" }));
+  await assert.rejects(run(pool, (db) => decideProtest(db, cid, steward, own!, { outcome: "dismissed", decision: "Je rejette ma propre demande.", penalty: null })), /Conflit/);
+  await run(pool, (db) => decideProtest(db, cid, owner, own!, { outcome: "dismissed", decision: "Incident de course, aucune sanction.", penalty: null }));
   // Correction : Léa a en réalité terminé le dernier tour (classée avec 20 tours).
   const leaResult = (await pool.query("SELECT id FROM results WHERE session_id=$1 AND iracing_cust_id=900003", [race])).rows[0].id;
   await run(pool, (db) => addCorrection(db, cid, owner, leaResult, "laps", "20", "Tour final validé par la direction de course"));

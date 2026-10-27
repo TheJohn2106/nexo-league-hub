@@ -155,8 +155,8 @@ export async function updateProfile(
   }
   if (String(previous?.iracing_cust_id ?? "") !== custRaw)
     await db.query(
-      "INSERT INTO audit_log(actor_id, action, target_type, target_id, detail) VALUES($1,'profile.iracing_id','user',$1,$2)",
-      [userId, JSON.stringify({ from: previous?.iracing_cust_id ?? null, to: custRaw || null })],
+      "INSERT INTO audit_log(actor_id, action, target_type, target_id, detail) VALUES($1,'profile.iracing_id','user',$3,$2)",
+      [userId, JSON.stringify({ from: previous?.iracing_cust_id ?? null, to: custRaw || null }), userId],
     );
 }
 

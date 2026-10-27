@@ -20,7 +20,6 @@ export type Permission =
   | "protests.decide" // décisions et pénalités
   | "audit.view"
   | "data.export"
-  | "team.attendance" // capitaine : présences de son équipe
   | "participate"; // inscription, présence, réclamation
 
 const matrix: Record<Permission, readonly Role[]> = {
@@ -34,7 +33,6 @@ const matrix: Record<Permission, readonly Role[]> = {
   "protests.decide": ["owner", "steward"],
   "audit.view": ["owner", "organizer"],
   "data.export": ["owner", "organizer"],
-  "team.attendance": ["owner", "organizer", "captain"],
   participate: ["owner", "organizer", "steward", "captain", "driver"],
 };
 

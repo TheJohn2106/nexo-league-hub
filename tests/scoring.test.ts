@@ -276,3 +276,17 @@ test("déterministe : même entrée, même sortie", () => {
   const input = base({ results: [res("S1", "a", 1), res("S1", "b", 2), res("S2", "c", 1)] });
   assert.deepEqual(computeStandings(input), computeStandings(structuredClone(input)));
 });
+
+test("joker en cours de saison : une manche prévue non courue est retirée avant un résultat réel", () => {
+  const input = base({
+    config: cfg({ dropWorst: 1, fastestLap: { points: 0, requiresClassified: true, maxPosition: null } }),
+    rounds: [...base().rounds, { id: "R3", number: 3, jokerEligible: true, cancelled: false }],
+    sessions: [...base().sessions, { id: "S3", roundId: "R3", kind: "race", label: "Course", coefficient: 1, awardsPoints: true, awardsPole: false, resultsStatus: "none" }],
+    results: [res("S1", "a", 1), res("S1", "b", 2), res("S2", "a", 2), res("S2", "b", 1)],
+  });
+  const out = computeStandings(input);
+  const a = out.drivers.find((d) => d.userId === "a")!;
+  assert.deepEqual(a.droppedRoundIds, ["R3"]);
+  assert.equal(a.points, a.grossPoints);
+  assert.equal(a.roundPoints.R3, undefined);
+});

@@ -129,16 +129,16 @@ export async function updateBranding(db: Db, communityId: string, actorId: strin
 
 export async function updateDiscordSettings(db: Db, communityId: string, actorId: string, webhookUrl: unknown, reminderHours: unknown) {
   await requirePermission(db, communityId, actorId, "community.manage");
-  const w = String(webhookUrl ?? "").trim();
+  const remove = String(webhookUrl ?? "").trim() === "-";
+  const w = remove ? "" : String(webhookUrl ?? "").trim();
   if (w && !/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/[\w-]+$/.test(w))
     throw new AppError("URL de webhook Discord invalide (https://discord.com/api/webhooks/…).");
   const h = Number(reminderHours);
   if (!Number.isInteger(h) || h < 1 || h > 336) throw new AppError("Délai de rappel : entre 1 et 336 heures.");
   // Valeur vide = conserver le webhook existant ; "-" = supprimer.
-  if (w || webhookUrl === "-")
-    await db.query("UPDATE communities SET discord_webhook_url=$2 WHERE id=$1", [communityId, webhookUrl === "-" ? null : w]);
+  if (w || remove) await db.query("UPDATE communities SET discord_webhook_url=$2 WHERE id=$1", [communityId, remove ? null : w]);
   await db.query("UPDATE communities SET discord_reminder_hours=$2 WHERE id=$1", [communityId, h]);
-  await audit(db, communityId, actorId, "community.discord", "community", communityId, { webhookChanged: !!w || webhookUrl === "-" });
+  await audit(db, communityId, actorId, "community.discord", "community", communityId, { webhookChanged: !!w || remove });
 }
 
 export async function listMembers(db: Db, communityId: string, actorId: string) {

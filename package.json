@@ -10,12 +10,13 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.ts",
     "test:db": "node --test --test-concurrency=1 tests/db/*.test.ts",
-    "test:e2e": "playwright test",
+    "test:e2e": "node tests/e2e/flows.cjs",
     "db:migrate": "node scripts/migrate.ts",
     "db:seed": "node scripts/seed.ts",
     "owner:create": "node scripts/create-owner.ts",
     "worker": "node scripts/worker.ts",
-    "worker:once": "node scripts/worker.ts --once"
+    "worker:once": "node scripts/worker.ts --once",
+    "test:crawl": "node tests/e2e/crawl.cjs"
   },
   "engines": {
     "node": ">=22.18.0"
@@ -23,6 +24,7 @@
   "type": "module",
   "dependencies": {
     "@iracing-data/api-client-fetch": "^0.0.1-beta.0",
+    "dotenv": "^18.0.9",
     "next": "^16.4.3",
     "pg": "^8.23.1",
     "react": "^19.3.1",
@@ -36,7 +38,6 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "dotenv": "^18.0.9",
     "typescript": "^7.0.2"
   }
 }
