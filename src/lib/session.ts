@@ -6,6 +6,8 @@ import { getPool } from "./db.ts";
 import { SESSION_DAYS, userFromToken, type SessionUser } from "./services/accounts.ts";
 
 export const SESSION_COOKIE = "nexo_session";
+/** Lien de réinitialisation venant d’être créé, affiché une fois sur la page Membres (2 minutes). */
+export const RESET_LINK_COOKIE = "nexo_reset_link";
 
 export const currentUser = cache(async (): Promise<SessionUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
