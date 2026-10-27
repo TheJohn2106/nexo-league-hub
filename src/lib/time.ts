@@ -25,6 +25,10 @@ export function zonedLocalToUtc(local: string, timeZone = DEFAULT_TZ): Date {
   let guess = naive - offsetMinutes(new Date(naive), timeZone) * 60000;
   // Second passage pour les changements d'heure.
   guess = naive - offsetMinutes(new Date(guess), timeZone) * 60000;
+  // Heure sautée au passage à l'heure d'été (ex. 02:30 le dernier dimanche de mars) : refusée plutôt que décalée en silence.
+  // Heure doublée à l'automne (02:30 existe deux fois) : la seconde occurrence (heure d'hiver) est retenue.
+  if (utcToZonedLocal(new Date(guess), timeZone) !== local.trim())
+    throw new Error(`L’heure ${m[4]}:${m[5]} n’existe pas le ${m[3]}/${m[2]}/${m[1]} (passage à l’heure d’été) : choisissez une autre heure.`);
   return new Date(guess);
 }
 
