@@ -261,3 +261,10 @@ export async function setPasswordByEmail(db: Db, rawEmail: string, next: unknown
   await audit(db, null, null, "password.reset_server", "user", user.id);
   return user.id as string;
 }
+
+// ---------- Première installation (serveur vierge) ----------
+
+/** Vrai tant qu'aucun compte n'existe : la page /setup n'est utilisable qu'à ce moment-là. */
+export async function needsSetup(db: Db) {
+  return (await db.query("SELECT 1 FROM users LIMIT 1")).rowCount === 0;
+}

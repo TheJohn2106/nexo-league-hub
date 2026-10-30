@@ -1,5 +1,6 @@
 "use server";
 // Actions serveur (formulaires). Toute vérification de droits est faite dans les services appelés.
+import { timingSafeEqual } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getPool, tx } from "@/lib/db";
@@ -7,8 +8,8 @@ import { AppError } from "@/lib/errors";
 import { zonedLocalToUtc } from "@/lib/time";
 import { clientKey, currentUser, RESET_LINK_COOKIE, SESSION_COOKIE, setSessionCookie } from "@/lib/session";
 import { perform, safePath, str, withFlash } from "@/lib/web";
-import { changePassword, consumePasswordReset, createPasswordReset, createSession, destroySession, rateLimit, registerUser, updateProfile, verifyLogin } from "@/lib/services/accounts";
-import { decideMembership, removeMember, requestJoin, setRole, updateBranding, updateDiscordSettings } from "@/lib/services/community";
+import { needsSetup, changePassword, consumePasswordReset, createPasswordReset, createSession, destroySession, rateLimit, registerUser, updateProfile, verifyLogin } from "@/lib/services/accounts";
+import { createCommunity, decideMembership, removeMember, requestJoin, setRole, updateBranding, updateDiscordSettings } from "@/lib/services/community";
 import {
   createChampionship,
   createRound,
@@ -41,6 +42,31 @@ export async function loginAction(form: FormData) {
     await setSessionCookie(await createSession(getPool(), userId));
   } catch (e) {
     target = `/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(e instanceof AppError ? e.message : "Connexion impossible.")}`;
+  }
+  redirect(target);
+}
+
+export async function setupAction(form: FormData) {
+  let target = "/";
+  try {
+    await rateLimit(getPool(), `setup:${await clientKey()}`, 10, 15);
+    const expected = process.env.SETUP_TOKEN ?? "";
+    const given = str(form, "token");
+    if (!expected || given.length !== expected.length || !timingSafeEqual(Buffer.from(given), Buffer.from(expected))) throw new AppError("Jeton d’installation incorrect.");
+    if (str(form, "password") !== str(form, "password2")) throw new AppError("Les mots de passe ne correspondent pas.");
+    const slug = str(form, "slug").trim().toLowerCase();
+    const userId = await tx(async (db) => {
+      // Verrou : deux envois simultanés ne peuvent pas créer deux propriétaires.
+      await db.query("LOCK TABLE users IN EXCLUSIVE MODE");
+      if (!(await needsSetup(db))) throw new AppError("Installation déjà faite.");
+      const id = await registerUser(db, { email: form.get("email"), password: form.get("password"), displayName: form.get("displayName") });
+      await createCommunity(db, { slug, name: str(form, "league").trim() || slug }, id!);
+      return id!;
+    });
+    await setSessionCookie(await createSession(getPool(), userId));
+    target = `/c/${slug}/admin/settings`;
+  } catch (e) {
+    target = withFlash("/setup", "error", e instanceof AppError ? e.message : "Installation impossible.");
   }
   redirect(target);
 }

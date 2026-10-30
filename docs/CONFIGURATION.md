@@ -143,3 +143,23 @@ Ajouter une « Source navigateur » :
 - Prochaine manche : `https://<hôte>/obs/<ligue>/next-round`, avec `?championship=<slug>` en option.
 
 Le fond est transparent et la page se rafraîchit toutes les 60 s. Seules des données publiques sont affichées (pseudos, points). Un championnat en brouillon renvoie 404.
+
+## Railway
+
+Le dépôt contient deux fichiers de configuration Railway :
+
+- `railway.json` pour le site : il construit le Dockerfile, applique les migrations avant chaque déploiement et vérifie `/api/ready`.
+- `railway.worker.json` pour le worker : même image, commande `npm run worker`.
+
+Dans le projet Railway, il faut :
+
+1. Une base **PostgreSQL**.
+2. Un service **site** branché sur le dépôt GitHub, avec les variables :
+   - `DATABASE_URL=${{Postgres.DATABASE_URL}}` ;
+   - `APP_ORIGIN=https://<domaine>` ;
+   - `COOKIE_SECURE=true` ;
+   - `NODE_ENV=production` ;
+   - `SETUP_TOKEN` (une valeur aléatoire).
+3. Un service **worker**, branché sur le même dépôt avec le fichier de config `railway.worker.json`, et les mêmes `DATABASE_URL` et `APP_ORIGIN`.
+
+**Première installation** : ouvrez `https://<domaine>/setup` et saisissez le `SETUP_TOKEN`, lisible dans les variables du service site. Créez ensuite le compte propriétaire et la ligue. La page disparaît dès que le premier compte existe. Vous pouvez alors supprimer `SETUP_TOKEN`.
