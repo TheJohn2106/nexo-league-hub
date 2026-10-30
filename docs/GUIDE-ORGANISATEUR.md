@@ -55,13 +55,19 @@ Un compte créé n’est **jamais** membre ni participant automatiquement : l’
   - départage ;
   - nombre de résultats comptant par équipe.
 
+### Championnat multiclasse ou à voitures tournantes
+
+- **Multiclasse** (GTP + GT3, GT3 + GT4…) : choisissez la base de points « classe » dans le barème, et listez les classes dans « Catégories ». Pole et meilleur tour sont attribués par classe. Le classement public montre d’abord un classement par classe, puis le général toutes classes confondues.
+- La classe d’un pilote vient de sa catégorie d’inscription. S’il n’en a pas, elle est déduite de ses résultats : la classe où il a le plus couru.
+- **Voitures différentes selon la manche** : laissez « Voitures autorisées » vide au niveau du championnat (ou listez-les toutes) et ne rendez pas le choix de voiture obligatoire. Indiquez les voitures de chaque manche dans le formulaire de la manche : elles s’affichent au calendrier, sur la page de la manche, dans l’annonce Discord et dans la vue OBS.
+
 Statuts : brouillon (invisible du public), inscriptions ouvertes, fermées, terminé, annulé. Pour publier, cliquez sur « Ouvrir les inscriptions ».
 
 Modifier le règlement en cochant « nouvelle version » incrémente la version. Les pilotes doivent alors ré-accepter le règlement : la date et la version acceptées sont conservées.
 
 ## 3. Manches et sessions
 
-Depuis la page du championnat, ajoutez une manche : nom, circuit, configuration et départ de la course (heure locale). Choisissez aussi les essais et qualifications éventuels, le nombre de courses, une capacité spécifique et si la manche peut être retirée comme joker.
+Depuis la page du championnat, ajoutez une manche : nom, circuit, configuration et départ de la course (heure locale). Indiquez les voitures de la manche si elles diffèrent de celles du championnat. Choisissez aussi les essais et qualifications éventuels, le nombre de courses, une capacité spécifique et si la manche peut être retirée comme joker.
 
 Sur la page de la manche (`/admin/rounds/<id>`) :
 
@@ -101,7 +107,7 @@ Pour chaque session, trois voies mènent à un **aperçu** avant validation :
    - ou **modèle CSV Nexo**, un format interne, **pas** un export officiel iRacing.
    
    En-tête du modèle : `position;cust_id;pseudo;classe;voiture;depart;tours;meilleur_tour;temps_total;incidents;statut`
-3. **Saisie manuelle** de secours, ligne par ligne, validée.
+3. **Saisie manuelle** de secours, ligne par ligne, validée. En multiclasse, la colonne « Classe » est pré-remplie depuis l’inscription ; la place en classe est calculée.
 
 Dans l’aperçu :
 

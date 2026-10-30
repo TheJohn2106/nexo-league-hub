@@ -261,6 +261,7 @@ export async function createRoundAction(form: FormData) {
         name: form.get("name"),
         track: form.get("track"),
         trackConfig: form.get("trackConfig"),
+        cars: form.get("cars"),
         startsAt: localDate(form, "startsAt", c),
         capacity: form.get("capacity"),
         serverInfo: form.get("serverInfo"),
@@ -279,6 +280,7 @@ export async function updateRoundAction(form: FormData) {
       name: form.get("name"),
       track: form.get("track"),
       trackConfig: form.get("trackConfig"),
+      cars: form.get("cars"),
       capacity: form.get("capacity"),
       serverInfo: form.get("serverInfo"),
       notes: form.get("notes"),
@@ -418,6 +420,7 @@ export async function importManualAction(form: FormData) {
         bestLap: String(form.getAll("bestLap")[i] ?? ""),
         totalTime: String(form.getAll("totalTime")[i] ?? ""),
         incidents: String(form.getAll("incidents")[i] ?? "") === "" ? null : Number(form.getAll("incidents")[i]),
+        carClass: String(form.getAll("carClass")[i] ?? ""),
       }))
       .filter((r) => r.position > 0);
     let out;

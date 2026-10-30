@@ -89,7 +89,7 @@ export async function importManual(db: Db, communityId: string, actorId: string,
   const session = await sessionIn(db, communityId, sessionId, true);
   const users = (
     await db.query(
-      `SELECT r.user_id, u.display_name, p.iracing_cust_id FROM registrations r JOIN users u ON u.id=r.user_id
+      `SELECT r.user_id, u.display_name, p.iracing_cust_id, r.category FROM registrations r JOIN users u ON u.id=r.user_id
        JOIN driver_profiles p ON p.user_id=r.user_id WHERE r.championship_id=$1`,
       [session.championship_id],
     )
@@ -97,7 +97,8 @@ export async function importManual(db: Db, communityId: string, actorId: string,
   const full = rows.map((r) => {
     const u = users.find((x) => x.user_id === r.userId);
     if (!u) throw new AppError("Pilote non inscrit à ce championnat.");
-    return { ...r, custId: u.iracing_cust_id ? Number(u.iracing_cust_id) : null, displayName: u.display_name };
+    // Classe : celle saisie, sinon la catégorie d'inscription (championnat multiclasse).
+    return { ...r, carClass: String(r.carClass ?? "").trim() || u.category || null, custId: u.iracing_cust_id ? Number(u.iracing_cust_id) : null, displayName: u.display_name };
   });
   const raw = { manual: full, enteredAt: new Date().toISOString() };
   return storeImport(db, communityId, actorId, session, "manual", raw, stableStringify(full), () => parseManualRows(full));

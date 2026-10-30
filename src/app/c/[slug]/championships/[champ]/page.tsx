@@ -118,23 +118,48 @@ async function StandingsTab({ communityId, championshipId, base }: { communityId
   const db = getPool();
   const { input, output } = await championshipStandings(db, communityId, championshipId);
   const rows = output.drivers.filter((d) => d.starts > 0 || d.points !== 0);
+  const cats = Object.entries(output.categories);
+  // Plusieurs classes (ou catégories) : leurs classements passent devant le général, qui mélange les classes.
+  const multi = cats.length >= 2;
   return (
     <div className="stack">
       {output.provisional && <p className="notice warn">Classement provisoire : certains résultats ne sont pas encore définitifs.</p>}
-      <h2>Pilotes</h2>
-      <DriverTable rows={rows} rounds={input.rounds} base={base} />
+      {multi && (
+        <nav className="row" aria-label="Classes">
+          {cats.map(([cat]) => (
+            <a key={cat} className="pill" href={`#classe-${encodeURIComponent(cat)}`}>
+              {cat}
+            </a>
+          ))}
+          <a className="pill" href="#general">
+            Général
+          </a>
+        </nav>
+      )}
+      {multi &&
+        cats.map(([cat, list]) => (
+          <section key={cat} id={`classe-${encodeURIComponent(cat)}`}>
+            <h2>{cat}</h2>
+            <DriverTable rows={list.filter((d) => d.starts > 0 || d.points !== 0)} rounds={input.rounds} base={base} />
+          </section>
+        ))}
+      <section id="general" className={multi ? "section" : undefined}>
+        <h2>{multi ? "Général, toutes classes confondues" : "Pilotes"}</h2>
+        <DriverTable rows={rows} rounds={input.rounds} base={base} compact={multi} />
+      </section>
       {output.teams.length > 0 && (
         <>
           <h2 className="section">Équipes</h2>
           <TeamTable rows={output.teams} />
         </>
       )}
-      {Object.entries(output.categories).map(([cat, list]) => (
-        <section key={cat} className="section">
-          <h2>Catégorie {cat}</h2>
-          <DriverTable rows={list.filter((d) => d.starts > 0 || d.points !== 0)} rounds={input.rounds} base={base} compact />
-        </section>
-      ))}
+      {!multi &&
+        cats.map(([cat, list]) => (
+          <section key={cat} className="section">
+            <h2>Catégorie {cat}</h2>
+            <DriverTable rows={list.filter((d) => d.starts > 0 || d.points !== 0)} rounds={input.rounds} base={base} compact />
+          </section>
+        ))}
     </div>
   );
 }
@@ -166,6 +191,7 @@ async function CalendarTab({ championshipId, base, tz }: { championshipId: strin
               <td>
                 {r.track}
                 {r.trackConfig && <span className="muted"> · {r.trackConfig}</span>}
+                {r.cars?.length > 0 && <div className="breakdown">{r.cars.join(", ")}</div>}
               </td>
               <td>
                 <When date={r.startsAt} tz={tz} />

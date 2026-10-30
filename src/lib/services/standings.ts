@@ -16,7 +16,8 @@ export async function loadEngineInput(db: Db, communityId: string, championshipI
   ).rows;
   const results = (
     await db.query(
-      `SELECT res.* FROM results res JOIN round_sessions s ON s.id=res.session_id JOIN rounds r ON r.id=s.round_id WHERE r.championship_id=$1`,
+      `SELECT res.* FROM results res JOIN round_sessions s ON s.id=res.session_id JOIN rounds r ON r.id=s.round_id WHERE r.championship_id=$1
+       ORDER BY r.number, s.starts_at, s.ordinal, res.finish_position`,
       [c.id],
     )
   ).rows;
@@ -45,6 +46,23 @@ export async function loadEngineInput(db: Db, communityId: string, championshipI
     )
   ).rows;
   const teams = (await db.query("SELECT id, name FROM teams WHERE championship_id=$1 ORDER BY name", [c.id])).rows;
+  // Multiclasse : un pilote inscrit sans catégorie est classé dans la classe de voiture où il a le plus couru (la plus récente en cas d'égalité).
+  // Seulement si les résultats comptent au moins deux classes ; sinon un classement par catégorie ferait doublon avec le général.
+  const classFallback = new Map<string, string>();
+  if (new Set(results.map((r) => r.car_class).filter(Boolean)).size >= 2) {
+    const counts = new Map<string, Map<string, number>>();
+    for (const r of results) {
+      if (!r.user_id || !r.car_class) continue;
+      const m = counts.get(r.user_id) ?? new Map<string, number>();
+      m.set(r.car_class, (m.get(r.car_class) ?? 0) + 1);
+      counts.set(r.user_id, m);
+    }
+    for (const [userId, m] of counts) {
+      let best: string | null = null;
+      for (const [k, n] of m) if (best === null || n >= m.get(best)!) best = k;
+      if (best) classFallback.set(userId, best);
+    }
+  }
   const noShows = (
     await db.query("SELECT a.round_id, a.user_id FROM attendances a JOIN rounds r ON r.id=a.round_id WHERE r.championship_id=$1 AND a.start_status='no_show'", [c.id])
   ).rows;
@@ -81,7 +99,7 @@ export async function loadEngineInput(db: Db, communityId: string, championshipI
     })),
     corrections: corrections.map((x) => ({ resultId: x.result_id, field: x.field, newValue: x.new_value })),
     penalties: penalties.map((p) => ({ id: p.id, sessionId: p.session_id, userId: p.user_id, kind: p.kind, value: p.value, scope: p.scope })),
-    drivers: drivers.map((d) => ({ userId: d.user_id, displayName: d.display_name, category: d.category, teamId: d.team_id })),
+    drivers: drivers.map((d) => ({ userId: d.user_id, displayName: d.display_name, category: d.category ?? classFallback.get(d.user_id) ?? null, teamId: d.team_id })),
     teams,
     noShows: noShows.map((n) => ({ roundId: n.round_id, userId: n.user_id })),
   };

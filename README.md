@@ -43,7 +43,7 @@ npm run user:password -- --email orga@exemple.org   # redéfinir un mot de passe
 ```bash
 npm run typecheck                 # TypeScript
 npm test                          # moteur de points, parseurs de résultats, permissions, fuseau horaire (32 tests)
-npm run test:db                   # PostgreSQL réel : scénario complet, sécurité, concurrence, Discord et iRacing simulés, mot de passe oublié, changement d’heure (14 tests)
+npm run test:db                   # PostgreSQL réel : scénario complet, sécurité, concurrence, Discord et iRacing simulés, mot de passe oublié, changement d’heure, multiclasse (15 tests)
 npm run build                     # build de production
 curl -s localhost:3000/api/health # {"status":"ok"}
 curl -s localhost:3000/api/ready  # {"status":"ready"} si la base répond et toutes les migrations sont appliquées

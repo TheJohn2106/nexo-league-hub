@@ -306,6 +306,8 @@ export interface ManualRowInput {
   bestLap: string;
   totalTime: string;
   incidents: number | null;
+  /** Classe de voiture (championnat multiclasse). */
+  carClass?: string | null;
 }
 export function parseManualRows(input: ManualRowInput[]): ParsedSession {
   if (!input.length) throw new Error("Saisissez au moins un résultat.");
@@ -320,7 +322,7 @@ export function parseManualRows(input: ManualRowInput[]): ParsedSession {
     teamName: null,
     crew: [],
     car: null,
-    carClass: null,
+    carClass: r.carClass?.trim() || null,
     carNumber: null,
     finishPosition: r.position,
     classPosition: null,
@@ -341,6 +343,15 @@ export function parseManualRows(input: ManualRowInput[]): ParsedSession {
 
 function finalizeManual(rows: ParsedRow[], label: string): ParsedSession {
   rows.sort((a, b) => a.finishPosition - b.finishPosition);
+  // Place en classe, déduite de l'ordre au général quand une classe est indiquée (multiclasse).
+  if (rows.some((r) => r.carClass)) {
+    const counters = new Map<string, number>();
+    for (const r of rows) {
+      const k = r.carClass ?? "";
+      counters.set(k, (counters.get(k) ?? 0) + 1);
+      r.classPosition = counters.get(k)!;
+    }
+  }
   const leader = rows.find((r) => r.status === "classified");
   for (const r of rows) {
     if (leader?.laps != null && r.laps != null) r.gapLaps = leader.laps - r.laps;

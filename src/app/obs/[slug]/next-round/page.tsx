@@ -37,6 +37,7 @@ export default async function ObsNext({ params, searchParams }: { params: Promis
               M{r.number} · {r.track}
             </div>
             {r.trackConfig && <div>{r.trackConfig}</div>}
+            {r.cars?.length > 0 && <div>{r.cars.join(" · ")}</div>}
             <div>
               {formatDateTime(r.startsAt, c.timezone)}
               {r.status === "postponed" ? " · reportée" : ""}

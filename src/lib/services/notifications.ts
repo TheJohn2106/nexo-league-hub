@@ -46,7 +46,7 @@ async function mention(db: Db, userId: string) {
 async function roundInfo(db: Db, roundId: string) {
   return (
     await db.query(
-      `SELECT r.name, r.number, r.track, r.track_config, r.starts_at, c.name AS champ, c.slug AS champ_slug, co.slug, co.timezone
+      `SELECT r.name, r.number, r.track, r.track_config, r.cars, r.starts_at, c.name AS champ, c.slug AS champ_slug, co.slug, co.timezone
        FROM rounds r JOIN championships c ON c.id=r.championship_id JOIN communities co ON co.id=c.community_id WHERE r.id=$1`,
       [roundId],
     )
@@ -64,7 +64,7 @@ export async function renderMessage(db: Db, kind: string, payload: Record<string
       return `⏰ ${await mention(db, String(payload.userId))}, indique ta présence pour **${r.champ} — Manche ${r.number} : ${r.name}** (${when}) : ${url}`;
     if (kind === "seat_offer")
       return `🎟️ ${await mention(db, String(payload.userId))}, une place se libère pour **${r.champ} — Manche ${r.number}** (${when}). Accepte-la avant ${formatDateTime(String(payload.expiresAt), r.timezone)} : ${url}`;
-    return `🏁 **${r.champ} — Manche ${r.number} : ${r.name}**\n📍 ${r.track}${r.track_config ? ` (${r.track_config})` : ""}\n🕗 ${when}\nRéponds présent : ${url}`;
+    return `🏁 **${r.champ} — Manche ${r.number} : ${r.name}**\n📍 ${r.track}${r.track_config ? ` (${r.track_config})` : ""}${r.cars?.length ? `\n🚗 ${r.cars.join(", ")}` : ""}\n🕗 ${when}\nRéponds présent : ${url}`;
   }
   if (kind === "results_published") {
     const s = (
