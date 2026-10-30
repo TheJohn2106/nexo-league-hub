@@ -45,8 +45,8 @@ Date : 27 octobre 2026 (mise à jour : fiabilisation avant une première manche)
 9. Import d’une course en équipage multi-classes : voiture rapprochée par l’équipage, choix obligatoire si deux inscrits partagent une voiture, points par classe vérifiés.
 10. Récupération iRacing avec **iRacing simulé** : compte non connecté, 429 → nouvel essai à 15 min, 503 → nouvel essai, succès → aperçu, lien de téléchargement sans en-tête d’autorisation, pas de doublon, 401 → pas de reprise, abandon après 5 essais.
 11. Lien de réinitialisation de mot de passe : droits (organisateur → pilotes et capitaines ; propriétaire → tout sauf propriétaire ; compte privilégié d’une autre ligue refusé ; compte Discord seul refusé), jeton stocké haché, usage unique, expiration, ancien lien annulé, mot de passe refusé sans consommer le lien, sessions fermées, commande serveur `user:password`.
-13. Championnat multiclasse à voitures différentes selon la manche : voitures par manche (conservées ou retirées à la modification), saisie manuelle avec classe, places en classe, points par classe, classe déduite des résultats pour un pilote inscrit sans catégorie.
 12. Rappel de présence autour du passage à l’heure d’hiver : déclenché à la seconde près, une seule fois, jamais après la limite, quel que soit le fuseau de la session SQL.
+13. Championnat multiclasse à voitures différentes selon la manche : voitures par manche (conservées ou retirées à la modification), saisie manuelle avec classe, places en classe, points par classe, classe déduite des résultats pour un pilote inscrit sans catégorie.
 
 ### Navigateur
 
