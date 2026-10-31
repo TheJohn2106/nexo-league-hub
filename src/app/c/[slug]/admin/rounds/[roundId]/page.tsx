@@ -262,7 +262,7 @@ export default async function RoundAdmin({ params, searchParams }: { params: Pro
                   <summary>3. Saisie manuelle de secours</summary>
                   <form action={importManualAction} className="body form">
                     <Hidden values={{ ...h, sessionId: s.id }} />
-                    <p className="breakdown">Laissez la position vide pour les pilotes absents. Temps au format 1:32.456.</p>
+                    <p className="breakdown">Laissez la position vide pour les pilotes absents. Temps au format 1:32.456. Position au général ; en multiclasse, indiquez la classe (pré-remplie depuis l’inscription), la place en classe est calculée.</p>
                     <div className="table-wrap">
                       <table>
                         <thead>
@@ -274,6 +274,7 @@ export default async function RoundAdmin({ params, searchParams }: { params: Pro
                             <th>Meilleur tour</th>
                             <th>Temps total</th>
                             <th>Inc.</th>
+                            <th>Classe</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -306,6 +307,9 @@ export default async function RoundAdmin({ params, searchParams }: { params: Pro
                               </td>
                               <td>
                                 <input name="incidents" inputMode="numeric" style={{ width: 60 }} aria-label={`Incidents ${p.displayName}`} />
+                              </td>
+                              <td>
+                                <input name="carClass" defaultValue={p.category ?? ""} style={{ width: 90 }} aria-label={`Classe ${p.displayName}`} />
                               </td>
                             </tr>
                           ))}
@@ -429,6 +433,10 @@ export default async function RoundAdmin({ params, searchParams }: { params: Pro
               <label>
                 Configuration
                 <input name="trackConfig" defaultValue={round.track_config} />
+              </label>
+              <label>
+                Voitures de la manche <span className="hint">Séparées par des virgules. Vide = voitures du championnat.</span>
+                <input name="cars" defaultValue={(round.cars ?? []).join(", ")} />
               </label>
               <label>
                 Capacité

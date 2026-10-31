@@ -290,3 +290,27 @@ test("joker en cours de saison : une manche prévue non courue est retirée avan
   assert.equal(a.points, a.grossPoints);
   assert.equal(a.roundPoints.R3, undefined);
 });
+
+test("multi-classe : une pole et un meilleur tour par classe ; une seule pole au général sinon", () => {
+  const results = [
+    res("Q1", "a", 1, { carClass: "GTP" }),
+    res("Q1", "c", 2, { carClass: "GT3" }),
+    res("Q1", "b", 3, { carClass: "GTP" }),
+    res("Q1", "d", 4, { carClass: "GT3" }),
+    res("S1", "b", 1, { carClass: "GTP", bestLapMs: 90000 }),
+    res("S1", "a", 2, { carClass: "GTP", bestLapMs: 90500 }),
+    res("S1", "d", 3, { carClass: "GT3", bestLapMs: 99000 }),
+    res("S1", "c", 4, { carClass: "GT3", bestLapMs: 98000 }),
+  ];
+  const byClass = computeStandings(base({ config: cfg({ positionBasis: "class" }), results }));
+  const line = (out: ReturnType<typeof computeStandings>, u: string) => out.lines.find((l) => l.sessionId === "S1" && l.userId === u)!;
+  assert.equal(line(byClass, "a").polePoints, 1);
+  assert.equal(line(byClass, "c").polePoints, 1);
+  assert.equal(line(byClass, "b").fastestLapPoints, 1);
+  assert.equal(line(byClass, "c").fastestLapPoints, 1);
+  assert.equal(line(byClass, "d").fastestLapPoints + line(byClass, "d").polePoints, 0);
+  const overall = computeStandings(base({ config: cfg(), results }));
+  assert.equal(overall.lines.filter((l) => l.polePoints > 0).length, 1);
+  assert.equal(overall.lines.filter((l) => l.fastestLapPoints > 0).length, 1);
+  assert.equal(line(overall, "b").fastestLapPoints, 1);
+});

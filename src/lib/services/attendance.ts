@@ -256,7 +256,7 @@ export async function roundAttendance(db: Db, communityId: string, roundId: stri
   const rows = (
     await db.query(
       `SELECT r.user_id AS "userId", u.display_name AS "displayName", r.status AS "registration", r.reserve_rank AS "reserveRank",
-              t.name AS "teamName", t.id AS "teamId", r.race_number AS "raceNumber",
+              t.name AS "teamName", t.id AS "teamId", r.race_number AS "raceNumber", r.category,
               COALESCE(a.response,'none') AS response, a.responded_at AS "respondedAt", COALESCE(a.seat,'none') AS seat,
               a.waitlist_position AS "waitlistPosition", a.offer_expires_at AS "offerExpiresAt", a.checked_in_at AS "checkedInAt",
               a.start_status AS "startStatus"

@@ -14,7 +14,7 @@ export default async function LeagueLayout({ children, params }: { children: Rea
   const { slug } = await params;
   const { community, user, role } = await loadLeague(slug);
   const b = community.branding;
-  const style = { "--brand": b.primaryColor ?? "#e10600", "--accent": b.accentColor ?? "#ffd400" } as CSSProperties;
+  const style = { "--brand": b.primaryColor ?? "#0055a4", "--accent": b.accentColor ?? "#ef4135" } as CSSProperties;
   const base = `/c/${slug}`;
   const staff = can(role, "championship.manage") || can(role, "protests.view") || can(role, "members.review");
   return (

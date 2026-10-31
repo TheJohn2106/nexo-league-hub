@@ -123,6 +123,16 @@ export default async function Dashboard({ params, searchParams }: { params: Prom
               <li key={f.id}>
                 <Pill value="failed" /> {f.message}{" "}
                 {f.roundId && <Link href={`${base}/admin/rounds/${f.roundId}#resultats`}>M{f.number} ({f.label})</Link>} · <When date={f.createdAt} tz={tz} />
+                <div className="breakdown">
+                  {f.attempts} essai(s) ·{" "}
+                  {f.retryAfter ? (
+                    <>
+                      nouvel essai automatique <When date={f.retryAfter} tz={tz} />
+                    </>
+                  ) : (
+                    "pas de nouvel essai automatique : action requise"
+                  )}
+                </div>
               </li>
             ))}
             {d.failedNotifications > 0 && (

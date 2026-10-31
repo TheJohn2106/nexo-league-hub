@@ -36,7 +36,10 @@ export default async function Login({ searchParams }: { searchParams: SP }) {
           </button>
         </form>
       )}
-      <p style={{ marginTop: 16 }}>
+      <p className="muted" style={{ marginTop: 16 }}>
+        Mot de passe oublié ? Demandez à l’organisation de votre ligue un lien de réinitialisation (valable 24 heures, usage unique).
+      </p>
+      <p>
         Pas encore de compte ? <Link href={`/register?next=${encodeURIComponent(next)}`}>Créer un compte</Link>
       </p>
     </main>

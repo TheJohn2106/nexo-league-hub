@@ -171,7 +171,7 @@ export async function createRound(
   communityId: string,
   actorId: string,
   championshipId: string,
-  input: { name: unknown; track: unknown; trackConfig: unknown; startsAt: Date; capacity: unknown; serverInfo: unknown; notes: unknown; jokerEligible: unknown; plan?: SessionPlan[] },
+  input: { name: unknown; track: unknown; trackConfig: unknown; startsAt: Date; capacity: unknown; serverInfo: unknown; notes: unknown; jokerEligible: unknown; cars?: unknown; plan?: SessionPlan[] },
 ) {
   await requirePermission(db, communityId, actorId, "championship.manage");
   const c = await championshipIn(db, communityId, championshipId, true);
@@ -184,9 +184,9 @@ export async function createRound(
   const number = (await db.query("SELECT COALESCE(max(number),0)+1 AS n FROM rounds WHERE championship_id=$1", [c.id])).rows[0].n;
   const round = (
     await db.query(
-      `INSERT INTO rounds(championship_id, number, name, track, track_config, starts_at, original_starts_at, capacity, server_info, notes, is_joker_eligible)
-       VALUES($1,$2,$3,$4,$5,$6,$6,$7,$8,$9,$10) RETURNING id`,
-      [c.id, number, name, track, String(input.trackConfig ?? "").trim(), input.startsAt, cap ? Number(cap) : null, String(input.serverInfo ?? ""), String(input.notes ?? ""), input.jokerEligible !== false && input.jokerEligible !== "off"],
+      `INSERT INTO rounds(championship_id, number, name, track, track_config, starts_at, original_starts_at, capacity, server_info, notes, is_joker_eligible, cars)
+       VALUES($1,$2,$3,$4,$5,$6,$6,$7,$8,$9,$10,$11) RETURNING id`,
+      [c.id, number, name, track, String(input.trackConfig ?? "").trim(), input.startsAt, cap ? Number(cap) : null, String(input.serverInfo ?? ""), String(input.notes ?? ""), input.jokerEligible !== false && input.jokerEligible !== "off", JSON.stringify(list(input.cars))],
     )
   ).rows[0];
   const plan = input.plan ?? defaultSessionPlan;
@@ -211,15 +211,25 @@ export async function updateRound(
   communityId: string,
   actorId: string,
   roundId: string,
-  input: { name: unknown; track: unknown; trackConfig: unknown; capacity: unknown; serverInfo: unknown; notes: unknown; jokerEligible: unknown },
+  input: { name: unknown; track: unknown; trackConfig: unknown; capacity: unknown; serverInfo: unknown; notes: unknown; jokerEligible: unknown; cars?: unknown },
 ) {
   await requirePermission(db, communityId, actorId, "championship.manage");
   const r = await roundIn(db, communityId, roundId, true);
   const cap = String(input.capacity ?? "").trim();
   if (cap && !/^\d+$/.test(cap)) throw new AppError("Capacité : nombre entier.");
   await db.query(
-    "UPDATE rounds SET name=$2, track=$3, track_config=$4, capacity=$5, server_info=$6, notes=$7, is_joker_eligible=$8 WHERE id=$1",
-    [r.id, String(input.name ?? r.name).trim() || r.name, String(input.track ?? r.track).trim() || r.track, String(input.trackConfig ?? ""), cap ? Number(cap) : null, String(input.serverInfo ?? ""), String(input.notes ?? ""), input.jokerEligible === "on" || input.jokerEligible === true],
+    "UPDATE rounds SET name=$2, track=$3, track_config=$4, capacity=$5, server_info=$6, notes=$7, is_joker_eligible=$8, cars=$9 WHERE id=$1",
+    [
+      r.id,
+      String(input.name ?? r.name).trim() || r.name,
+      String(input.track ?? r.track).trim() || r.track,
+      String(input.trackConfig ?? ""),
+      cap ? Number(cap) : null,
+      String(input.serverInfo ?? ""),
+      String(input.notes ?? ""),
+      input.jokerEligible === "on" || input.jokerEligible === true,
+      JSON.stringify(input.cars === undefined ? (r.cars ?? []) : list(input.cars)),
+    ],
   );
   await audit(db, communityId, actorId, "round.update", "round", r.id);
 }

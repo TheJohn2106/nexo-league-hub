@@ -22,7 +22,7 @@ export async function roundsOf(db: Db, championshipId: string, includeDrafts = f
   return (
     await db.query(
       `SELECT r.id, r.number, r.name, r.track, r.track_config AS "trackConfig", r.starts_at AS "startsAt", r.original_starts_at AS "originalStartsAt",
-              r.status, r.capacity, r.is_joker_eligible AS "jokerEligible",
+              r.status, r.capacity, r.is_joker_eligible AS "jokerEligible", r.cars,
               (SELECT count(*)::int FROM attendances a WHERE a.round_id=r.id AND a.seat='confirmed') AS confirmed,
               (SELECT json_agg(json_build_object('id', s.id, 'kind', s.kind, 'label', s.label, 'startsAt', s.starts_at, 'durationMinutes', s.duration_minutes,
                   'resultsStatus', s.results_status, 'awardsPoints', s.awards_points, 'coefficient', s.coefficient) ORDER BY s.starts_at, s.ordinal)
@@ -37,7 +37,7 @@ export async function nextRound(db: Db, communityId: string, championshipId?: st
   return (
     (
       await db.query(
-        `SELECT r.id, r.number, r.name, r.track, r.track_config AS "trackConfig", r.starts_at AS "startsAt", r.status,
+        `SELECT r.id, r.number, r.name, r.track, r.track_config AS "trackConfig", r.starts_at AS "startsAt", r.status, r.cars,
                 c.name AS "championshipName", c.slug AS "championshipSlug", c.id AS "championshipId", COALESCE(r.capacity, c.capacity) AS capacity,
                 (SELECT count(*)::int FROM attendances a WHERE a.round_id=r.id AND a.seat='confirmed') AS confirmed
          FROM rounds r JOIN championships c ON c.id=r.championship_id
@@ -217,7 +217,7 @@ export async function adminDashboard(db: Db, communityId: string) {
     ),
     syncFailures: (
       await db.query(
-        `SELECT f.id, f.code, f.message, f.created_at AS "createdAt", s.label, r.number, r.id AS "roundId"
+        `SELECT f.id, f.code, f.message, f.created_at AS "createdAt", f.attempts, f.retry_after AS "retryAfter", s.label, r.number, r.id AS "roundId"
          FROM sync_failures f LEFT JOIN round_sessions s ON s.id=f.session_id LEFT JOIN rounds r ON r.id=s.round_id
          WHERE f.community_id=$1 AND f.resolved_at IS NULL ORDER BY f.created_at DESC LIMIT 10`,
         [communityId],

@@ -1,11 +1,21 @@
 import { requireLeaguePermission } from "@/lib/league";
 import { listMembers } from "@/lib/services/community";
 import { Flash, Hidden, Pill, When, labels, type SP } from "@/components/ui";
-import { decideMemberAction, removeMemberAction, setRoleAction } from "@/app/actions";
+import { cookies } from "next/headers";
+import { decideMemberAction, removeMemberAction, resetLinkAction, setRoleAction } from "@/app/actions";
+import { RESET_LINK_COOKIE } from "@/lib/session";
 import { can, roles } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Membres" };
+
+function readFresh(raw: string | undefined): { userId: string; url: string } | null {
+  try {
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function Members({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: SP }) {
   const { slug } = await params;
@@ -14,6 +24,13 @@ export default async function Members({ params, searchParams }: { params: Promis
   const { community, db, user, role } = await requireLeaguePermission(slug, "members.review", here);
   const members = await listMembers(db, community.id, user.id);
   const h = { slug, back: here };
+  const fresh = readFresh((await cookies()).get(RESET_LINK_COOKIE)?.value);
+  // Mêmes règles que le service (qui reste seul juge) : propriétaire → tout sauf propriétaire ; organisateur → pilotes et capitaines.
+  const resettable = (m: (typeof members)[number]) =>
+    m.userId !== user.id &&
+    !!m.email &&
+    (m.status === "accepted" || m.status === "pending") &&
+    (role === "owner" ? m.role !== "owner" : m.role === "driver" || m.role === "captain");
   return (
     <>
       <h1>Membres</h1>
@@ -92,6 +109,21 @@ export default async function Members({ params, searchParams }: { params: Promis
                         <button className="btn small danger">Retirer de la ligue</button>
                       </form>
                     </details>
+                  )}
+                  {fresh && fresh.userId === m.userId ? (
+                    <div className="flash ok" style={{ marginTop: 8 }}>
+                      <label>
+                        Lien à transmettre en privé (24 h, usage unique)
+                        <input readOnly value={fresh.url} className="mono" />
+                      </label>
+                    </div>
+                  ) : (
+                    resettable(m) && (
+                      <form action={resetLinkAction} style={{ marginTop: 6 }}>
+                        <Hidden values={{ ...h, userId: m.userId }} />
+                        <button className="btn small">Lien mot de passe</button>
+                      </form>
+                    )
                   )}
                 </td>
               </tr>

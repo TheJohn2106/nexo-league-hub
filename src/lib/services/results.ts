@@ -89,7 +89,7 @@ export async function importManual(db: Db, communityId: string, actorId: string,
   const session = await sessionIn(db, communityId, sessionId, true);
   const users = (
     await db.query(
-      `SELECT r.user_id, u.display_name, p.iracing_cust_id FROM registrations r JOIN users u ON u.id=r.user_id
+      `SELECT r.user_id, u.display_name, p.iracing_cust_id, r.category FROM registrations r JOIN users u ON u.id=r.user_id
        JOIN driver_profiles p ON p.user_id=r.user_id WHERE r.championship_id=$1`,
       [session.championship_id],
     )
@@ -97,10 +97,70 @@ export async function importManual(db: Db, communityId: string, actorId: string,
   const full = rows.map((r) => {
     const u = users.find((x) => x.user_id === r.userId);
     if (!u) throw new AppError("Pilote non inscrit à ce championnat.");
-    return { ...r, custId: u.iracing_cust_id ? Number(u.iracing_cust_id) : null, displayName: u.display_name };
+    // Classe : celle saisie, sinon la catégorie d'inscription (championnat multiclasse).
+    return { ...r, carClass: String(r.carClass ?? "").trim() || u.category || null, custId: u.iracing_cust_id ? Number(u.iracing_cust_id) : null, displayName: u.display_name };
   });
   const raw = { manual: full, enteredAt: new Date().toISOString() };
   return storeImport(db, communityId, actorId, session, "manual", raw, stableStringify(full), () => parseManualRows(full));
+}
+
+// Échecs repris automatiquement par le worker (avec le compte iRacing de l'organisateur qui a lancé la récupération).
+// Les autres (configuration, autorisation à renouveler, format) attendent une action humaine.
+const RETRYABLE = new Set(["rate-limit", "provider", "busy"]);
+export const MAX_SYNC_ATTEMPTS = 5;
+
+export async function recordSyncFailure(db: Db, communityId: string, sessionId: string, actorId: string, code: string, message: string) {
+  const retryable = RETRYABLE.has(code);
+  // Délai : 15 min pour une limite de requêtes, sinon 5, 10, 20, 40 min.
+  const updated = await db.query(
+    `UPDATE sync_failures SET attempts=attempts+1, code=$3, message=$4, actor_id=$5,
+       retry_after=CASE WHEN $6 AND attempts+1 < $7 THEN now() + make_interval(mins => CASE WHEN $3='rate-limit' THEN 15 ELSE 5 * power(2, attempts)::int END) END
+     WHERE session_id=$1 AND community_id=$2 AND kind='iracing_results' AND resolved_at IS NULL RETURNING id`,
+    [sessionId, communityId, code, message, actorId, retryable, MAX_SYNC_ATTEMPTS],
+  );
+  if (updated.rowCount) return;
+  await db.query(
+    `INSERT INTO sync_failures(community_id, session_id, kind, code, message, actor_id, retry_after)
+     VALUES($1,$2,'iracing_results',$3,$4,$5, CASE WHEN $6 THEN now() + make_interval(mins => CASE WHEN $3='rate-limit' THEN 15 ELSE 5 END) END)`,
+    [communityId, sessionId, code, message, actorId, retryable],
+  );
+}
+
+/** Reprise des échecs arrivés à échéance (worker). Un nouvel échec reprogramme ou abandonne via recordSyncFailure. */
+export async function retryDueSyncFailures(pool: Pool, transport?: Transport, now = new Date()) {
+  const due = (
+    await pool.query(
+      `SELECT id, community_id, session_id, actor_id FROM sync_failures
+       WHERE resolved_at IS NULL AND kind='iracing_results' AND retry_after <= $1 AND session_id IS NOT NULL ORDER BY retry_after LIMIT 10`,
+      [now],
+    )
+  ).rows;
+  const stats = { retried: 0, recovered: 0, failed: 0 };
+  for (const f of due) {
+    stats.retried++;
+    // Réserve l'essai : un autre worker ne reprend pas la même ligne.
+    const claimed = await pool.query("UPDATE sync_failures SET retry_after=NULL WHERE id=$1 AND retry_after IS NOT NULL RETURNING id", [f.id]);
+    if (!claimed.rowCount) continue;
+    if (!f.actor_id) {
+      await pool.query("UPDATE sync_failures SET message='Auteur de la récupération introuvable : relancez-la manuellement.' WHERE id=$1", [f.id]);
+      stats.failed++;
+      continue;
+    }
+    try {
+      const out = await importFromIracingApi(pool, f.community_id, f.actor_id, f.session_id, transport);
+      if (out.status === "failed") stats.failed++;
+      else stats.recovered++;
+    } catch (e) {
+      stats.failed++;
+      // Droits retirés, session supprimée… : pas de nouvel essai automatique.
+      if (!(e as { code?: string }).code)
+        await pool.query("UPDATE sync_failures SET message=$2 WHERE id=$1 AND resolved_at IS NULL", [
+          f.id,
+          `Reprise automatique impossible : ${(e as Error).message}`,
+        ]);
+    }
+  }
+  return stats;
 }
 
 /** Récupération via la Data API : réseau hors transaction, puis enregistrement de l'aperçu. */
@@ -118,11 +178,7 @@ export async function importFromIracingApi(pool: Pool, communityId: string, acto
   } catch (e) {
     const code = (e as { code?: string }).code ?? "provider";
     const message = (e as Error).message;
-    await pool.query(
-      `INSERT INTO sync_failures(community_id, session_id, kind, code, message, retry_after)
-       VALUES($1,$2,'iracing_results',$3,$4, CASE WHEN $3='rate-limit' THEN now()+interval '15 minutes' ELSE NULL END)`,
-      [communityId, session.id, code, message],
-    );
+    await recordSyncFailure(pool, communityId, session.id, actorId, code, message);
     throw e instanceof AppError ? e : new AppError(message, 502);
   }
   return tx(async (db) => {
@@ -130,12 +186,7 @@ export async function importFromIracingApi(pool: Pool, communityId: string, acto
     const out = await storeImport(db, communityId, actorId, locked, "iracing_api", raw, stableStringify(raw), () =>
       parseIracingResult(raw, { kind: locked.kind, simsessionNumber: locked.iracing_simsession_number, expectedSubsessionId: Number(locked.iracing_subsession_id) }),
     );
-    if (out.status === "failed")
-      await db.query("INSERT INTO sync_failures(community_id, session_id, kind, code, message) VALUES($1,$2,'iracing_results','results-format',$3)", [
-        communityId,
-        locked.id,
-        out.error,
-      ]);
+    if (out.status === "failed") await recordSyncFailure(db, communityId, locked.id, actorId, "results-format", out.error ?? "Format inattendu.");
     else await db.query("UPDATE sync_failures SET resolved_at=now() WHERE session_id=$1 AND resolved_at IS NULL", [locked.id]);
     return out;
   }, pool);
@@ -144,7 +195,7 @@ export async function importFromIracingApi(pool: Pool, communityId: string, acto
 export interface MatchSuggestion {
   entryKey: string;
   userId: string | null;
-  how: "iracing_id" | "manual_entry" | "name" | "none";
+  how: "iracing_id" | "crew" | "crew_choice" | "manual_entry" | "name" | "none";
   registered: boolean;
 }
 
@@ -178,6 +229,10 @@ export async function getImport(db: Db, communityId: string, importId: string) {
     }
     const byId = row.custId != null ? drivers.find((d) => d.custId != null && Number(d.custId) === row.custId) : undefined;
     if (byId) return { entryKey: row.entryKey, userId: byId.userId, how: "iracing_id", registered: true };
+    // Voiture d'équipage : rapprochée par les identifiants iRacing de ses pilotes.
+    const crew = drivers.filter((d) => d.custId != null && (row.crew ?? []).some((c) => c.custId === Number(d.custId)));
+    if (crew.length === 1) return { entryKey: row.entryKey, userId: crew[0].userId, how: "crew", registered: true };
+    if (crew.length > 1) return { entryKey: row.entryKey, userId: crew[0].userId, how: "crew_choice", registered: true };
     const byName = drivers.find((d) => d.displayName.toLowerCase() === row.displayName.toLowerCase());
     if (byName) return { entryKey: row.entryKey, userId: byName.userId, how: "name", registered: true };
     return { entryKey: row.entryKey, userId: null, how: "none", registered: false };
@@ -206,7 +261,7 @@ export async function applyImport(
   const undecided: string[] = [];
   for (const s of suggestions) {
     const choice = options.matches[s.entryKey];
-    if (s.how === "iracing_id" || s.how === "manual_entry") assigned.set(s.entryKey, choice && choice !== "auto" ? (choice === "none" ? null : choice) : s.userId);
+    if (s.how === "iracing_id" || s.how === "crew" || s.how === "manual_entry") assigned.set(s.entryKey, choice && choice !== "auto" ? (choice === "none" ? null : choice) : s.userId);
     else if (choice === "none") assigned.set(s.entryKey, null);
     else if (choice && choice !== "auto") assigned.set(s.entryKey, choice);
     else undecided.push(parsed.rows.find((r) => r.entryKey === s.entryKey)!.displayName);

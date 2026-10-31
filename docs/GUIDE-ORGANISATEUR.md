@@ -25,6 +25,13 @@ Un compte créé n’est **jamais** membre ni participant automatiquement : l’
 
 **Membres** (`/admin/members`) : accepter ou refuser les demandes, attribuer les rôles, retirer un membre (avec motif). Les coordonnées privées (email, contact) ne sont visibles que de l’organisation.
 
+**Mot de passe oublié** : l’application n’envoie pas d’email. Sur la page Membres, « Lien mot de passe » crée un lien **à usage unique, valable 24 heures**, affiché pendant 2 minutes : copiez-le et transmettez-le au membre par un canal **privé** (message direct Discord, par exemple), jamais dans un salon public. Le membre choisit un nouveau mot de passe ; toutes ses sessions ouvertes sont fermées. Créer un nouveau lien annule le précédent, et chaque lien créé est inscrit au journal.
+
+- Un organisateur peut le faire pour un pilote ou un capitaine ; le propriétaire, pour tout membre sauf un propriétaire.
+- Un compte qui a un rôle plus élevé dans une **autre** ligue hébergée est refusé (le compte est commun aux ligues).
+- Un compte propriétaire se réinitialise sur le serveur : `npm run user:password -- --email <adresse>` (accès à la base requis).
+- Un compte créé avec Discord n’a pas de mot de passe : il se connecte avec Discord.
+
 ## 2. Créer une saison
 
 **Nouveau championnat** :
@@ -48,13 +55,19 @@ Un compte créé n’est **jamais** membre ni participant automatiquement : l’
   - départage ;
   - nombre de résultats comptant par équipe.
 
+### Championnat multiclasse ou à voitures tournantes
+
+- **Multiclasse** (GTP + GT3, GT3 + GT4…) : choisissez la base de points « classe » dans le barème, et listez les classes dans « Catégories ». Pole et meilleur tour sont attribués par classe. Le classement public montre d’abord un classement par classe, puis le général toutes classes confondues.
+- La classe d’un pilote vient de sa catégorie d’inscription. S’il n’en a pas, elle est déduite de ses résultats : la classe où il a le plus couru.
+- **Voitures différentes selon la manche** : laissez « Voitures autorisées » vide au niveau du championnat (ou listez-les toutes) et ne rendez pas le choix de voiture obligatoire. Indiquez les voitures de chaque manche dans le formulaire de la manche : elles s’affichent au calendrier, sur la page de la manche, dans l’annonce Discord et dans la vue OBS.
+
 Statuts : brouillon (invisible du public), inscriptions ouvertes, fermées, terminé, annulé. Pour publier, cliquez sur « Ouvrir les inscriptions ».
 
 Modifier le règlement en cochant « nouvelle version » incrémente la version. Les pilotes doivent alors ré-accepter le règlement : la date et la version acceptées sont conservées.
 
 ## 3. Manches et sessions
 
-Depuis la page du championnat, ajoutez une manche : nom, circuit, configuration et départ de la course (heure locale). Choisissez aussi les essais et qualifications éventuels, le nombre de courses, une capacité spécifique et si la manche peut être retirée comme joker.
+Depuis la page du championnat, ajoutez une manche : nom, circuit, configuration et départ de la course (heure locale). Indiquez les voitures de la manche si elles diffèrent de celles du championnat. Choisissez aussi les essais et qualifications éventuels, le nombre de courses, une capacité spécifique et si la manche peut être retirée comme joker.
 
 Sur la page de la manche (`/admin/rounds/<id>`) :
 
@@ -88,17 +101,17 @@ Sur la page de la manche :
 
 Pour chaque session, trois voies mènent à un **aperçu** avant validation :
 
-1. **API iRacing** : récupère `/data/results/get` pour la sous-session associée, avec **votre** compte iRacing connecté (Profil → Connecter mon compte iRacing). Il faut que l’API soit configurée sur le serveur. Sinon le bouton est désactivé et un message explique comment l’activer. Les erreurs (limite de requêtes, autorisation expirée) sont enregistrées et visibles sur le tableau de bord.
-2. **Fichier** :
+1. **API iRacing** : récupère `/data/results/get` pour la sous-session associée, avec **votre** compte iRacing connecté (Profil → Connecter mon compte iRacing). Il faut que l’API soit configurée sur le serveur. Sinon le bouton est désactivé et un message explique comment l’activer. Les erreurs (limite de requêtes, autorisation expirée) sont enregistrées et visibles sur le tableau de bord. Les erreurs passagères sont relancées automatiquement par le worker (5 essais au plus) ; une autorisation expirée demande de reconnecter votre compte iRacing.
+2. **Fichier** (courses en équipage et multi-classes comprises) :
    - JSON de la Data API iRacing (réponse de `results/get`) ;
    - ou **modèle CSV Nexo**, un format interne, **pas** un export officiel iRacing.
    
    En-tête du modèle : `position;cust_id;pseudo;classe;voiture;depart;tours;meilleur_tour;temps_total;incidents;statut`
-3. **Saisie manuelle** de secours, ligne par ligne, validée.
+3. **Saisie manuelle** de secours, ligne par ligne, validée. En multiclasse, la colonne « Classe » est pré-remplie depuis l’inscription ; la place en classe est calculée.
 
 Dans l’aperçu :
 
-- Les pilotes reconnus par leur identifiant iRacing sont rapprochés automatiquement.
+- Les pilotes reconnus par leur identifiant iRacing sont rapprochés automatiquement. En équipage, la voiture est rapprochée si un seul inscrit figure dans l’équipage ; sinon, choisissez lequel marque les points.
 - Un nom identique est seulement **suggéré** : il faut confirmer.
 - Un participant inconnu exige une décision : choisir un pilote, ou « hors classement ».
 - Cochez « définitifs » ou laissez « provisoires », par exemple en attendant les réclamations.

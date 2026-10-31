@@ -50,6 +50,7 @@ export default async function RoundPage({ params, searchParams }: { params: Prom
           <When date={round.starts_at} tz={tz} />
           {round.status === "postponed" && <span className="muted"> (initialement {formatDateTime(round.original_starts_at, tz)})</span>}
         </p>
+        {round.cars?.length > 0 && <p className="muted">Voitures : {round.cars.join(", ")}</p>}
         {round.notes && <p className="muted">{round.notes}</p>}
         {can(role, "attendance.manage") && (
           <Link className="btn small" href={`${base}/admin/rounds/${round.id}`}>

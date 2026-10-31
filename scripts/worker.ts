@@ -1,4 +1,5 @@
-// Tâches de fond : rappels de présence, expiration des places proposées, envoi de la file Discord.
+// Tâches de fond : rappels de présence, expiration des places proposées, reprise des récupérations iRacing,
+// envoi de la file Discord.
 //   npm run worker        (boucle, toutes les 60 s)
 //   npm run worker:once   (un seul passage, pour un cron externe)
 import "dotenv/config";
@@ -6,6 +7,7 @@ import { getPool, tx } from "../src/lib/db.ts";
 import { rebalance } from "../src/lib/services/attendance.ts";
 import { roundIn } from "../src/lib/services/context.ts";
 import { deliverPending, scheduleReminders } from "../src/lib/services/notifications.ts";
+import { retryDueSyncFailures } from "../src/lib/services/results.ts";
 
 const pool = getPool();
 const once = process.argv.includes("--once");
@@ -26,9 +28,10 @@ async function tick(now = new Date()) {
       const round = await roundIn(db, d.community_id, d.round_id, true);
       await rebalance(db, round, null);
     }, pool);
+  const iracing = await retryDueSyncFailures(pool, fetch, now);
   const delivery = await tx((db) => deliverPending(db), pool);
   const failures = (await pool.query("SELECT count(*)::int n FROM sync_failures WHERE resolved_at IS NULL")).rows[0].n;
-  return { reminders, expiredOfferRounds: due.length, ...delivery, unresolvedSyncFailures: failures };
+  return { reminders, expiredOfferRounds: due.length, iracingRetries: iracing, ...delivery, unresolvedSyncFailures: failures };
 }
 
 async function main() {

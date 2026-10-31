@@ -41,7 +41,9 @@ export interface ParsedSession {
 
 // Les unités iRacing : positions à partir de 0, temps en dix-millièmes de seconde.
 const num = z.number().nullable().optional();
-const irDriver = z.object({ cust_id: z.number().int(), display_name: z.string().optional() }).passthrough();
+const irDriver = z
+  .object({ cust_id: z.number().int(), display_name: z.string().optional(), best_lap_time: num, laps_complete: num, incidents: num })
+  .passthrough();
 const irRow = z
   .object({
     cust_id: z.number().int().optional(),
@@ -131,7 +133,14 @@ export function parseIracingResult(
     .slice()
     .sort((a, b) => a.finish_position - b.finish_position)
     .map((r) => {
-      const isTeam = r.cust_id == null && r.team_id != null;
+      // Course en équipage : ligne de voiture (team_id, identifiant pilote absent ou négatif) avec ses pilotes dans driver_results.
+      const crew = r.driver_results ?? [];
+      const isTeam = r.team_id != null && (r.cust_id == null || r.cust_id < 0 || crew.length > 0);
+      // Meilleur tour ou incidents absents au niveau de la voiture : repli sur les pilotes de l'équipage.
+      const crewBest = crew.map((d) => d.best_lap_time ?? -1).filter((v) => v > 0);
+      const bestLap = r.best_lap_time != null && r.best_lap_time > 0 ? r.best_lap_time : crewBest.length ? Math.min(...crewBest) : null;
+      const crewInc = crew.filter((d) => d.incidents != null);
+      const incidents = r.incidents ?? (crewInc.length ? crewInc.reduce((t, d) => t + (d.incidents ?? 0), 0) : null);
       const laps = r.laps_complete ?? null;
       const reason = r.reason_out ?? null;
       let status: ParsedStatus;
@@ -147,7 +156,7 @@ export function parseIracingResult(
         custId: isTeam ? null : (r.cust_id ?? null),
         displayName: r.display_name ?? (isTeam ? `Équipe ${r.team_id}` : `Pilote ${r.cust_id}`),
         teamName: isTeam ? (r.display_name ?? null) : null,
-        crew: (r.driver_results ?? []).map((d) => ({ custId: d.cust_id, displayName: d.display_name ?? String(d.cust_id) })),
+        crew: crew.map((d) => ({ custId: d.cust_id, displayName: d.display_name ?? String(d.cust_id) })),
         car: r.car_name ?? null,
         carClass: r.car_class_short_name ?? r.car_class_name ?? null,
         carNumber: r.livery?.car_number ?? null,
@@ -156,19 +165,19 @@ export function parseIracingResult(
         startPosition: pos(r.starting_position),
         laps,
         lapsLed: r.laps_lead ?? null,
-        bestLapMs: tenK(r.best_lap_time),
+        bestLapMs: tenK(bestLap),
         bestLapNumber: r.best_lap_num != null && r.best_lap_num > 0 ? r.best_lap_num : null,
         // iRacing ne fournit pas le temps total par pilote dans ce résultat : seul l'écart au leader (interval) existe.
         totalTimeMs: null,
         gapMs: interval != null && interval >= 0 && gapLaps === 0 ? Math.round(interval / 10) : null,
         gapLaps,
-        incidents: r.incidents ?? null,
+        incidents,
         status,
         reasonOut: reason,
       };
     });
   if (rows.some((r) => r.custId == null && r.entryKey.startsWith("team:")))
-    warnings.push("Course en équipage : chaque voiture doit être rattachée manuellement à un pilote inscrit.");
+    warnings.push("Course en équipage : chaque voiture est rattachée au pilote inscrit de son équipage ; à confirmer si plusieurs pilotes inscrits partagent la voiture.");
   if (!rows.length) warnings.push("Session sans participant.");
   return {
     sourceLabel: "Data API iRacing — results/get",
@@ -297,6 +306,8 @@ export interface ManualRowInput {
   bestLap: string;
   totalTime: string;
   incidents: number | null;
+  /** Classe de voiture (championnat multiclasse). */
+  carClass?: string | null;
 }
 export function parseManualRows(input: ManualRowInput[]): ParsedSession {
   if (!input.length) throw new Error("Saisissez au moins un résultat.");
@@ -311,7 +322,7 @@ export function parseManualRows(input: ManualRowInput[]): ParsedSession {
     teamName: null,
     crew: [],
     car: null,
-    carClass: null,
+    carClass: r.carClass?.trim() || null,
     carNumber: null,
     finishPosition: r.position,
     classPosition: null,
@@ -332,6 +343,15 @@ export function parseManualRows(input: ManualRowInput[]): ParsedSession {
 
 function finalizeManual(rows: ParsedRow[], label: string): ParsedSession {
   rows.sort((a, b) => a.finishPosition - b.finishPosition);
+  // Place en classe, déduite de l'ordre au général quand une classe est indiquée (multiclasse).
+  if (rows.some((r) => r.carClass)) {
+    const counters = new Map<string, number>();
+    for (const r of rows) {
+      const k = r.carClass ?? "";
+      counters.set(k, (counters.get(k) ?? 0) + 1);
+      r.classPosition = counters.get(k)!;
+    }
+  }
   const leader = rows.find((r) => r.status === "classified");
   for (const r of rows) {
     if (leader?.laps != null && r.laps != null) r.gapLaps = leader.laps - r.laps;

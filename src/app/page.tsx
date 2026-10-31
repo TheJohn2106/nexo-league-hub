@@ -16,7 +16,7 @@ export default async function Home() {
       <p className="muted">Gestion de ligues simracing. Aucune affiliation officielle avec iRacing.</p>
       {communities.length === 0 ? (
         <div className="notice warn">
-          Aucune ligue n’est encore configurée. Créez le propriétaire et la ligue avec <span className="mono">npm run owner:create</span> (voir README).
+          Aucune ligue n’est encore configurée. Créez le propriétaire et la ligue avec <span className="mono">npm run owner:create</span>, ou sur la page <Link href="/setup">Installation</Link> si l’hébergement définit SETUP_TOKEN.
         </div>
       ) : (
         <div className="grid three">

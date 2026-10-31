@@ -45,11 +45,11 @@ export default async function Settings({ params, searchParams }: { params: Promi
             </label>
             <label>
               Couleur principale
-              <input name="primaryColor" type="color" defaultValue={b.primaryColor ?? "#e10600"} />
+              <input name="primaryColor" type="color" defaultValue={b.primaryColor ?? "#0055a4"} />
             </label>
             <label>
               Couleur d’accent
-              <input name="accentColor" type="color" defaultValue={b.accentColor ?? "#00b3ff"} />
+              <input name="accentColor" type="color" defaultValue={b.accentColor ?? "#ef4135"} />
             </label>
             <label>
               Fuseau horaire

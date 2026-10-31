@@ -177,6 +177,10 @@ export default async function ChampionshipAdmin({ params, searchParams }: { para
                 <input name="trackConfig" />
               </label>
               <label>
+                Voitures de la manche <span className="hint">Séparées par des virgules. Vide = voitures du championnat.</span>
+                <input name="cars" placeholder="Ex. : Porsche 911 GT3 R, BMW M4 GT3" />
+              </label>
+              <label>
                 Départ de la course ({tz}) *
                 <input name="startsAt" type="datetime-local" required />
               </label>

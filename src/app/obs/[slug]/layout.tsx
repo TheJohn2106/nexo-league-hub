@@ -14,7 +14,7 @@ export default async function ObsLayout({ children, params }: { children: React.
     if (e instanceof AppError) notFound();
     throw e;
   }
-  const style = { "--brand": c.branding.primaryColor ?? "#e10600", "--accent": c.branding.accentColor ?? "#ffd400", padding: 8 } as CSSProperties;
+  const style = { "--brand": c.branding.primaryColor ?? "#0055a4", "--accent": c.branding.accentColor ?? "#ef4135", padding: 8 } as CSSProperties;
   return (
     <div className="obs-root" style={style}>
       {children}

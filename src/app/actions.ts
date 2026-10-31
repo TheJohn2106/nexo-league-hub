@@ -1,14 +1,15 @@
 "use server";
 // Actions serveur (formulaires). Toute vérification de droits est faite dans les services appelés.
-import { cookies } from "next/headers";
+import { timingSafeEqual } from "node:crypto";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getPool, tx } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { zonedLocalToUtc } from "@/lib/time";
-import { clientKey, currentUser, SESSION_COOKIE, setSessionCookie } from "@/lib/session";
+import { clientKey, currentUser, RESET_LINK_COOKIE, SESSION_COOKIE, setSessionCookie } from "@/lib/session";
 import { perform, safePath, str, withFlash } from "@/lib/web";
-import { changePassword, createSession, destroySession, rateLimit, registerUser, updateProfile, verifyLogin } from "@/lib/services/accounts";
-import { decideMembership, removeMember, requestJoin, setRole, updateBranding, updateDiscordSettings } from "@/lib/services/community";
+import { needsSetup, changePassword, consumePasswordReset, createPasswordReset, createSession, destroySession, rateLimit, registerUser, updateProfile, verifyLogin } from "@/lib/services/accounts";
+import { createCommunity, decideMembership, removeMember, requestJoin, setRole, updateBranding, updateDiscordSettings } from "@/lib/services/community";
 import {
   createChampionship,
   createRound,
@@ -41,6 +42,31 @@ export async function loginAction(form: FormData) {
     await setSessionCookie(await createSession(getPool(), userId));
   } catch (e) {
     target = `/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(e instanceof AppError ? e.message : "Connexion impossible.")}`;
+  }
+  redirect(target);
+}
+
+export async function setupAction(form: FormData) {
+  let target = "/";
+  try {
+    await rateLimit(getPool(), `setup:${await clientKey()}`, 10, 15);
+    const expected = process.env.SETUP_TOKEN ?? "";
+    const given = str(form, "token");
+    if (!expected || given.length !== expected.length || !timingSafeEqual(Buffer.from(given), Buffer.from(expected))) throw new AppError("Jeton d’installation incorrect.");
+    if (str(form, "password") !== str(form, "password2")) throw new AppError("Les mots de passe ne correspondent pas.");
+    const slug = str(form, "slug").trim().toLowerCase();
+    const userId = await tx(async (db) => {
+      // Verrou : deux envois simultanés ne peuvent pas créer deux propriétaires.
+      await db.query("LOCK TABLE users IN EXCLUSIVE MODE");
+      if (!(await needsSetup(db))) throw new AppError("Installation déjà faite.");
+      const id = await registerUser(db, { email: form.get("email"), password: form.get("password"), displayName: form.get("displayName") });
+      await createCommunity(db, { slug, name: str(form, "league").trim() || slug }, id!);
+      return id!;
+    });
+    await setSessionCookie(await createSession(getPool(), userId));
+    target = `/c/${slug}/admin/settings`;
+  } catch (e) {
+    target = withFlash("/setup", "error", e instanceof AppError ? e.message : "Installation impossible.");
   }
   redirect(target);
 }
@@ -106,6 +132,20 @@ export async function passwordAction(form: FormData) {
 export async function joinAction(form: FormData) {
   await perform(form, (db, u, c) => requestJoin(db, c.id, u.id, form.get("message")), "Demande envoyée : un organisateur va l’examiner.");
 }
+export async function resetPasswordAction(form: FormData) {
+  const token = str(form, "token");
+  let target = withFlash("/profile", "ok", "Mot de passe modifié. Vous êtes connecté.");
+  try {
+    await rateLimit(getPool(), `reset:${await clientKey()}`, 10, 15);
+    if (str(form, "next") !== str(form, "next2")) throw new AppError("Les mots de passe ne correspondent pas.");
+    const userId = await tx((db) => consumePasswordReset(db, token, form.get("next")));
+    await setSessionCookie(await createSession(getPool(), userId!));
+  } catch (e) {
+    target = withFlash(`/reset?token=${encodeURIComponent(token)}`, "error", e instanceof AppError ? e.message : "Erreur inattendue.");
+  }
+  redirect(target);
+}
+
 export async function decideMemberAction(form: FormData) {
   await perform(form, (db, u, c) => decideMembership(db, c.id, u.id, str(form, "userId"), str(form, "decision") === "accepted" ? "accepted" : "refused"));
 }
@@ -114,6 +154,26 @@ export async function setRoleAction(form: FormData) {
 }
 export async function removeMemberAction(form: FormData) {
   await perform(form, (db, u, c) => removeMember(db, c.id, u.id, str(form, "userId"), form.get("reason")), "Membre retiré.");
+}
+/** Le lien n'est jamais mis dans l'URL de retour : il passe par un cookie httpOnly de 2 minutes, lu par la page Membres. */
+export async function resetLinkAction(form: FormData) {
+  await perform(
+    form,
+    async (db, u, c) => {
+      const userId = str(form, "userId");
+      const token = await createPasswordReset(db, c.id, u.id, userId);
+      const h = await headers();
+      const origin = process.env.APP_ORIGIN || `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+      (await cookies()).set(RESET_LINK_COOKIE, JSON.stringify({ userId, url: new URL(`/reset?token=${token}`, origin).href }), {
+        httpOnly: true,
+        secure: process.env.COOKIE_SECURE !== "false",
+        sameSite: "strict",
+        path: `/c/${c.slug}/admin/members`,
+        maxAge: 120,
+      });
+      return "Lien créé : copiez-le et transmettez-le au membre par un canal privé.";
+    },
+  );
 }
 export async function brandingAction(form: FormData) {
   const partners = str(form, "partners")
@@ -227,6 +287,7 @@ export async function createRoundAction(form: FormData) {
         name: form.get("name"),
         track: form.get("track"),
         trackConfig: form.get("trackConfig"),
+        cars: form.get("cars"),
         startsAt: localDate(form, "startsAt", c),
         capacity: form.get("capacity"),
         serverInfo: form.get("serverInfo"),
@@ -245,6 +306,7 @@ export async function updateRoundAction(form: FormData) {
       name: form.get("name"),
       track: form.get("track"),
       trackConfig: form.get("trackConfig"),
+      cars: form.get("cars"),
       capacity: form.get("capacity"),
       serverInfo: form.get("serverInfo"),
       notes: form.get("notes"),
@@ -384,6 +446,7 @@ export async function importManualAction(form: FormData) {
         bestLap: String(form.getAll("bestLap")[i] ?? ""),
         totalTime: String(form.getAll("totalTime")[i] ?? ""),
         incidents: String(form.getAll("incidents")[i] ?? "") === "" ? null : Number(form.getAll("incidents")[i]),
+        carClass: String(form.getAll("carClass")[i] ?? ""),
       }))
       .filter((r) => r.position > 0);
     let out;

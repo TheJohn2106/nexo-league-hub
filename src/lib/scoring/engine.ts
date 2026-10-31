@@ -160,6 +160,14 @@ function sessionEffective(
   return order;
 }
 
+/** Regroupe les lignes par classe de voiture (ordre d'arrivée conservé), ou un seul groupe. */
+function byClass<T extends { carClass: string | null }>(rows: T[], split: boolean): T[][] {
+  if (!split) return [rows];
+  const m = new Map<string, T[]>();
+  for (const r of rows) m.set(r.carClass ?? "", [...(m.get(r.carClass ?? "") ?? []), r]);
+  return [...m.values()];
+}
+
 function points(table: number[], position: number) {
   return position >= 1 && position <= table.length ? table[position - 1] : 0;
 }
@@ -227,42 +235,46 @@ export function computeStandings(input: EngineInput): EngineOutput {
       lines.push(line);
     }
     // Meilleur tour : plus petit temps, départage par ordre d'arrivée. Bonus perdu si le détenteur est inéligible.
-    if (cfg.fastestLap.points) {
-      const best = rows
-        .filter((r) => r.bestLapMs != null && r.bestLapMs > 0 && r.status !== "dsq")
-        .sort((a, b) => a.bestLapMs! - b.bestLapMs! || a.finishPosition - b.finishPosition)[0];
-      if (best?.userId) {
-        const line = lines.find((l) => l.sessionId === s.id && l.userId === best.userId);
-        const pos = cfg.positionBasis === "class" ? (best.classPosition ?? best.finishPosition) : best.finishPosition;
-        const eligible =
-          (!cfg.fastestLap.requiresClassified || best.status === "classified") &&
-          (cfg.fastestLap.maxPosition == null || pos <= cfg.fastestLap.maxPosition);
-        if (line && eligible) {
-          line.fastestLapPoints = cfg.fastestLap.points;
-          line.notes.push("Meilleur tour");
-        } else if (line) line.notes.push("Meilleur tour sans bonus (conditions non remplies)");
+    // Multi-classe (base « classe ») : un meilleur tour par classe.
+    if (cfg.fastestLap.points)
+      for (const group of byClass(rows, cfg.positionBasis === "class")) {
+        const best = group
+          .filter((r) => r.bestLapMs != null && r.bestLapMs > 0 && r.status !== "dsq")
+          .sort((a, b) => a.bestLapMs! - b.bestLapMs! || a.finishPosition - b.finishPosition)[0];
+        if (best?.userId) {
+          const line = lines.find((l) => l.sessionId === s.id && l.userId === best.userId);
+          const pos = cfg.positionBasis === "class" ? (best.classPosition ?? best.finishPosition) : best.finishPosition;
+          const eligible =
+            (!cfg.fastestLap.requiresClassified || best.status === "classified") &&
+            (cfg.fastestLap.maxPosition == null || pos <= cfg.fastestLap.maxPosition);
+          if (line && eligible) {
+            line.fastestLapPoints = cfg.fastestLap.points;
+            line.notes.push("Meilleur tour");
+          } else if (line) line.notes.push("Meilleur tour sans bonus (conditions non remplies)");
+        }
       }
-    }
   }
 
   // Pole : 1re place d'une session de qualification marquée, rattachée à la première course à points de la manche.
-  for (const q of sessions.filter((s) => s.awardsPole)) {
-    const pole = effective[q.id].find((r) => r.status !== "dsq" && r.status !== "dns");
-    if (!pole?.userId || !known.has(pole.userId) || !cfg.pole.points) continue;
-    const race = sessions.filter((s) => s.roundId === q.roundId && s.awardsPoints)[0];
-    if (!race) continue;
-    const line = lines.find((l) => l.sessionId === race.id && l.userId === pole.userId);
-    const started = line && (line.status === "classified" || line.status === "dnf");
-    if (line && (!cfg.pole.requiresStart || started)) {
-      line.polePoints = cfg.pole.points;
-      line.notes.push("Pole position");
-    } else if (!line && !cfg.pole.requiresStart) {
-      const ghost = lineFor(race, { ...pole, status: "dns" });
-      ghost.polePoints = cfg.pole.points;
-      ghost.notes.push("Pole position (non partant)");
-      lines.push(ghost);
+  // Multi-classe (base « classe ») : une pole par classe.
+  for (const q of sessions.filter((s) => s.awardsPole))
+    for (const group of byClass(effective[q.id], cfg.positionBasis === "class")) {
+      const pole = group.find((r) => r.status !== "dsq" && r.status !== "dns");
+      if (!pole?.userId || !known.has(pole.userId) || !cfg.pole.points) continue;
+      const race = sessions.filter((s) => s.roundId === q.roundId && s.awardsPoints)[0];
+      if (!race) continue;
+      const line = lines.find((l) => l.sessionId === race.id && l.userId === pole.userId);
+      const started = line && (line.status === "classified" || line.status === "dnf");
+      if (line && (!cfg.pole.requiresStart || started)) {
+        line.polePoints = cfg.pole.points;
+        line.notes.push("Pole position");
+      } else if (!line && !cfg.pole.requiresStart) {
+        const ghost = lineFor(race, { ...pole, status: "dns" });
+        ghost.polePoints = cfg.pole.points;
+        ghost.notes.push("Pole position (non partant)");
+        lines.push(ghost);
+      }
     }
-  }
 
   // Coefficient : appliqué aux points de place et de participation, pas aux bonus.
   for (const l of lines) {
